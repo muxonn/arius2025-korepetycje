@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from models import db
 from urls.auth import auth
+from urls.api import api
 from config import Config
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
@@ -42,7 +43,7 @@ swagger = Swagger(app, template={
 
 
 app.register_blueprint(auth, url_prefix="/auth")
-# app.register_blueprint(api, url_prefix="/api")
+app.register_blueprint(api, url_prefix="/api")
 
 @app.errorhandler(404)
 def page_not_found(e):
