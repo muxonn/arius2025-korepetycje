@@ -2,6 +2,10 @@ from flask import Blueprint, jsonify, request, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import swag_from
 from sqlalchemy import desc, and_, asc
+import os
+
+SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
+
 
 from models import Teacher, Student, Review, Lesson, db
 
@@ -23,6 +27,7 @@ def page_not_found(e):
 ### Reviews ###
 
 @api.route('/teacher-reviews', methods = ['GET'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_reviews.yml'))
 @jwt_required()
 def get_reviews():
     user = get_user_by_jwt()
@@ -36,6 +41,7 @@ def get_reviews():
     return jsonify(reviews = reviews_list), 200
 
 @api.route('/teacher-reviews/<int:teacher_id>', methods = ['POST'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_review.yml'))
 @jwt_required()
 def add_review(teacher_id):
     user = get_user_by_jwt()
@@ -79,6 +85,7 @@ def add_review(teacher_id):
 
 
 @api.route('/teacher-reviews/<int:teacher_id>', methods = ['DELETE'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'delete_review.yml'))
 @jwt_required()
 def delete_review(teacher_id):
     user = get_user_by_jwt()
