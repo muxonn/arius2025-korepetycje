@@ -35,8 +35,8 @@ jwt = JWTManager(app)
 
 swagger = Swagger(app, template={
     "info": {
-        "title": "User API - monitoring smart devices",
-        "description": "API for user management, checking sensor readings and managing alerts in a device network.",
+        "title": "Korepetycje App API",
+        "description": "API created for the Korepetycje App. Made by Julia Burzynska, Mikolaj Przemirski, Jakub Madry, Bartosz Kurkus",
         "version": "1.0.0"
     }
 })

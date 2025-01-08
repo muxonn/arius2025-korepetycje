@@ -1,0 +1,51 @@
+tags:
+  - Reviews
+summary: Add a review for a teacher
+description: Allows a student to add a review for a specific teacher after a lesson.
+operationId: addReview
+parameters:
+  - name: teacher_id
+    in: path
+    required: true
+    type: integer
+    example: 2
+    description: The ID of the teacher being reviewed.
+  - name: body
+    in: body
+    required: true
+    schema:
+      type: object
+      properties:
+        rating:
+          type: number
+          example: 4
+          description: Rating value between 0 and 5.
+        comment:
+          type: string
+          example: "Amazing teacher!"
+responses:
+  200:
+    description: Review successfully added.
+    schema:
+      type: object
+      properties:
+        rating:
+          type: number
+          example: 4
+        comment:
+          type: string
+          example: "Amazing teacher!"
+  400:
+    description: Errors like invalid rating, lesson not found, or duplicate review.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Rating must be between values 0 and 5"
+  401:
+    description: Unauthorized access.
+  500:
+    description: Internal server error.
+security:
+  - jwt: []

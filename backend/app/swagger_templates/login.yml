@@ -1,0 +1,54 @@
+tags:
+  - Authentication
+summary: Login a user
+description: Authenticates a user and returns a JWT access token.
+operationId: login
+parameters:
+  - name: body
+    in: body
+    required: true
+    schema:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "john.doe@example.com"
+        password:
+          type: string
+          example: "password123"
+        role:
+          type: string
+          enum:
+            - student
+            - teacher
+          example: "student"
+responses:
+  200:
+    description: Login successful.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful."
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR..."
+  400:
+    description: Missing fields or validation errors.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Email, password and role are required."
+  401:
+    description: Invalid credentials.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid email or password."
+  500:
+    description: Internal server error.
