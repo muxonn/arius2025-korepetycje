@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import swag_from
+from datetime import datetime, timedelta
 from sqlalchemy import desc, and_, asc, cast, text, func, Index
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import REGCONFIG
@@ -9,7 +10,7 @@ import os
 
 SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
 
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, db
 
 api = Blueprint('api', __name__)
 
@@ -18,7 +19,7 @@ def get_user_by_jwt():
     user_id = get_jwt_identity()
     user = Teacher.query.get(user_id)
 
-    if not user or user.role == 'student':
+    if not user:
         user = Student.query.get(user_id)
 
     return user
@@ -43,7 +44,8 @@ def get_teacher_list():
         return jsonify({'message': 'User not found'}), 400
 
     if subject and difficulty:
-        teachers = Teacher.query.filter(Teacher.subjects.match(subject), Teacher.difficulty_levels.match(difficulty)).all()
+        teachers = Teacher.query.filter(Teacher.subjects.match(subject),
+                                        Teacher.difficulty_levels.match(difficulty)).all()
     elif subject:
         teachers = Teacher.query.filter(Teacher.subjects.match(subject)).all()
     elif difficulty:
@@ -52,11 +54,12 @@ def get_teacher_list():
         teachers = Teacher.query.all()
 
     if teachers:
-        teacher_id_list = [teacher.id for teacher in teachers]
-        print(teacher_id_list)
-        return jsonify({'teacher_id': teacher_id_list}), 200
+        teacher_list = [teacher.to_dict() for teacher in teachers]
+
+        return jsonify({'teacher_list': teacher_list}), 200
     else:
         return jsonify({'message': 'Teachers not found'}), 404
+
 
 ### End of teacher list ###
 
@@ -171,6 +174,11 @@ def add_lesson():
     if not date:
         return jsonify({'message': 'Date must be provided'}), 400
 
+    try:
+        teacher_id = int(teacher_id)
+    except ValueError:
+        return jsonify({'message': 'Teacher id must be an integer'}), 400
+
     if subject not in Teacher.query.filter_by(id=teacher_id).first().subjects:
         return jsonify({'message': 'Teacher does not teach this subject'}), 400
 
@@ -213,6 +221,7 @@ def get_lesson():
 
     return jsonify(lesson_list=lesson_list), 200
 
+
 ### End of lessons ###
 
 
@@ -253,3 +262,109 @@ def add_invoice():
     return jsonify({'message': 'Invoice created'}), 201
 
 ### End of invoices ###
+
+
+### Reports ###
+
+@api.route('/report', methods=['POST'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_report.yml'))
+@jwt_required()
+def add_report():
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 400
+
+    if user.role != 'teacher':
+        return jsonify({'message': 'User can not be a student'}), 400
+
+    data = request.get_json()
+    lesson_id = data.get('lesson_id')
+    comment = data.get('comment')
+    homework = data.get('homework')
+    progress_rating = data.get('progress_rating')
+
+    if not lesson_id:
+        return jsonify({'message': 'Lesson id not provided'}), 400
+
+    try:
+        lesson_id = int(lesson_id)
+    except ValueError:
+        return jsonify({'message': 'Lesson id must be an integer'}), 400
+
+    lesson = Lesson.query.filter_by(id=lesson_id).first()
+
+    if not lesson:
+        return jsonify({'message': 'Lesson not found'}), 404
+
+    if user.id != lesson.teacher_id:
+        return jsonify({'message': 'Teacher does not belong to this lesson and cannot create report'}), 400
+
+    if lesson.date + timedelta(hours=1) > datetime.now():
+        return jsonify({'message': 'Report cannot be created before the end of the lesson'}), 400
+
+    if not progress_rating:
+        return jsonify({'message': 'Rating must be provided'}), 400
+
+    try:
+        progress_rating = int(progress_rating)
+    except ValueError:
+        return jsonify({'message': 'Progress rating must be an integer'}), 400
+
+    if progress_rating < 0 or progress_rating > 5:
+        return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
+
+    if not comment:
+        comment = ''
+
+    if not homework:
+        homework = ''
+
+    new_report = LessonReport(
+        lesson_id=lesson_id,
+        comment=comment,
+        progress_rating=progress_rating,
+        homework=homework,
+        student_id=lesson.student_id
+    )
+
+    db.session.add(new_report)
+    db.session.commit()
+
+    return jsonify({'message': 'Report created'}), 201
+
+
+@api.route('/report', methods=['GET'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report_list.yml'))
+@jwt_required()
+def get_report():
+    user = get_user_by_jwt()
+    reports = None
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 400
+
+    if user.role == 'student':
+        reports = LessonReport.query.filter_by(student_id=user.id).all()
+    elif user.role == 'teacher':
+        reports = LessonReport.query.filter_by(teacher_id=user.id).all()
+
+    if not reports:
+        return jsonify({'message': 'No reports found'}), 400
+
+    report_list = []
+    for report in reports:
+        report_list.append({"student_name": Student.query.filter_by(id=report.student_id).first().name,
+                            "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
+                            "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject,
+                            "date": Lesson.query.filter_by(id=report.lesson_id).first().date.isoformat(),
+                            "homework": report.homework,
+                            "progress_rating": report.progress_rating,
+                            "comment": report.comment,
+                            })
+
+    print(report_list)
+
+    return jsonify({'report_list': report_list}), 200
+
+### End of reports ###

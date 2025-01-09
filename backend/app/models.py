@@ -52,6 +52,16 @@ class Teacher(BaseUser):
     difficulty_levels = db.Column(db.String(255), nullable=True)  # Comma-separated levels (e.g., "primary,high")
     bio = db.Column(db.Text, nullable=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'subjects': self.subjects,
+            'difficulty_levels': self.difficulty_levels,
+            'bio': self.bio
+        }
+
+
     __mapper_args__ = {'polymorphic_identity': 'teacher'}
 
 
@@ -87,8 +97,23 @@ class LessonReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete='CASCADE'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    report_text = db.Column(db.Text, nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    homework = db.Column(db.Text, nullable=False)
+    progress_rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'lesson_id': self.lesson_id,
+            'student_id': self.student_id,
+            'teacher_id': self.teacher_id,
+            'homework': self.homework,
+            'progress_rating': self.progress_rating,
+            'comment': self.comment,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
 
 
 class Review(db.Model):
