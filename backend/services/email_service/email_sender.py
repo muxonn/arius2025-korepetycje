@@ -1,10 +1,10 @@
+# Email sender that sends emails based on the given parameters
+
 import os
 from email.message import EmailMessage
 import ssl
 import smtplib
 from config import EMAIL_SENDER, EMAIL_PASSWORD, SMTP_PORT, SMTP_SERVER
-
-
 
 class EmailSender:
     def __init__(self):
@@ -22,10 +22,5 @@ class EmailSender:
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as smtp:
             smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
             smtp.sendmail(EMAIL_SENDER, email_receiver, em.as_string())
-
-# Tests
-# es = EmailSender()
-
-# es.send_email('jaiwiecejmnie@gmail.com', 'a', 'b')
 
 

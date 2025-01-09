@@ -15,3 +15,9 @@ services:
     image: adminer
     ports:
       - 8080:8080
+  email_service:
+    build:
+      context: ./services/email_service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
