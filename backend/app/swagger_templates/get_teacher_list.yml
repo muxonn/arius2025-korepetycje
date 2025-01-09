@@ -1,0 +1,37 @@
+tags:
+  - Teachers
+summary: Get list of teachers
+description: Allows a student to search for teachers using filters 'subject' or 'difficulty'.
+operationId: getTeacherList
+responses:
+  200:
+    description: Successfully got list of teachers
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          teacher_id:
+            type: number
+            example: 3
+  400:
+    description: Errors like user not found or user not a student.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "User not found"
+  404:
+    description: Did not find any teachers.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Teachers not found"
+  500:
+    description: Internal server error.
+security:
+  - jwt: []
+

@@ -30,9 +30,16 @@ def register():
 
     # Create a new user based on the role
     if role == 'student':
-        new_user = Student(name=name, email=email)
+        new_user = Student(name=name, email=email, role='student')
     elif role == 'teacher':
-        new_user = Teacher(name=name, email=email)
+
+        subjects = data.get('subjects')
+        difficulty_levels = data.get('difficulty_levels')
+
+        if not subjects or not difficulty_levels:
+            return jsonify({"message": "Subjects and difficulty levels are required."}), 400
+
+        new_user = Teacher(name=name, email=email, subjects=subjects, difficulty_levels=difficulty_levels, role='teacher')
 
     new_user.set_password(password)
 
@@ -61,7 +68,7 @@ def login():
     if role == 'student':
         user = Student.query.filter_by(email=email).first()
     elif role == "teacher":
-       user = Teacher.query.filter_by(email=email).first()
+        user = Teacher.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
         # Generate JWT token

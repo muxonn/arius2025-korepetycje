@@ -6,10 +6,12 @@ from urls.auth import auth
 from urls.api import api
 from config import Config
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from flasgger import Swagger
 from sqlalchemy.exc import OperationalError
 
 app = Flask(__name__)
+CORS(app)
 
 try:
     # Load app config
