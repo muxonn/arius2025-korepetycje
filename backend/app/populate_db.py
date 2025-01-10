@@ -1,6 +1,8 @@
 import random
+from datetime import datetime, time
+
 from faker import Faker
-from models import Teacher, Student, Lesson, Review, Invoice, LessonReport, db
+from models import Teacher, Student, Lesson, Review, Invoice, LessonReport, Calendar, db
 from server import app
 
 fake = Faker()
@@ -12,8 +14,8 @@ def populate_teachers(num):
             teacher = Teacher(
                 name=fake.name(),
                 email=fake.email(),
-                subjects="Mathematics, Physics",
-                difficulty_levels="Beginner, Intermediate",
+                subjects=["Mathematics", "Physics"],
+                difficulty_levels=["Beginner", "Intermediate"],
                 role="teacher"
             )
             teacher.set_password("pass")
@@ -72,8 +74,7 @@ def populate_reviews(num):
             print("Brak lekcji w bazie danych.")
             return
 
-        for _ in range(num):
-            lesson = random.choice(lessons)
+        for lesson in lessons:
             if lesson.teacher_id and lesson.student_id:
                 review = Review(
                     teacher_id=lesson.teacher_id,
@@ -114,8 +115,7 @@ def populate_reports(num):
             print("Brak lekcji w bazie danych.")
             return
 
-        for i in range(num):
-            lesson = random.choice(lessons)
+        for lesson in lessons:
             report = LessonReport(
                 lesson_id=lesson.id,
                 teacher_id=lesson.teacher_id,
@@ -129,6 +129,30 @@ def populate_reports(num):
         print(f"{num} raportów dodano do bazy danych.")
 
 
+def populate_calendars(num):
+    with app.app_context():
+        teachers = Teacher.query.all()
+
+        if not teachers:
+            print("Brak nauczycieli w bazie danych.")
+            return
+
+        for teacher in teachers:
+            available_from = time(random.randint(8, 10), 0, 0)  # Dostępne od 8:00-10:00
+            available_until = time(random.randint(17, 20), 0, 0)  # Dostępne do 17:00-20:00
+            working_days = random.sample(range(1, 8), random.randint(3, 5))  # 3-5 dni roboczych
+
+            calendar = Calendar(
+                teacher_id=teacher.id,
+                available_from=available_from,
+                available_until=available_until,
+                working_days=working_days
+            )
+            db.session.add(calendar)
+        db.session.commit()
+        print(f"{num} kalendarzy dodano do bazy danych.")
+
+
 if __name__ == "__main__":
     num_records = 10
     populate_teachers(num_records)
@@ -137,4 +161,5 @@ if __name__ == "__main__":
     populate_reviews(num_records)
     populate_invoices(num_records)
     populate_reports(num_records)
+    populate_calendars(num_records)
 
