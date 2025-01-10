@@ -33,7 +33,7 @@ def page_not_found(e):
 ### Teacher list ###
 
 @api.route('/teacher-list', methods=['GET'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_teacher_list.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_teacher.yml'))
 @jwt_required()
 def get_teacher_list():
     user = get_user_by_jwt()
@@ -152,7 +152,7 @@ def delete_review(teacher_id):
 
 ### Lessons ###
 @api.route('/lesson', methods=['POST'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_lesson.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_lesson.yml'))
 @jwt_required()
 def add_lesson():
     user = get_user_by_jwt()
@@ -219,7 +219,7 @@ def add_lesson():
 
 
 @api.route('/lesson', methods=['GET'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_lesson.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_lesson.yml'))
 @jwt_required()
 def get_lesson():
     user = get_user_by_jwt()
@@ -247,7 +247,7 @@ def get_lesson():
 ### Invoices ###
 
 @api.route('/invoice', methods=['POST'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
 @jwt_required()
 def add_invoice():
     user = get_user_by_jwt()
@@ -287,7 +287,7 @@ def add_invoice():
 ### Reports ###
 
 @api.route('/report', methods=['POST'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_report.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_report.yml'))
 @jwt_required()
 def add_report():
     user = get_user_by_jwt()
@@ -355,7 +355,7 @@ def add_report():
 
 
 @api.route('/report', methods=['GET'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report_list.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report.yml'))
 @jwt_required()
 def get_report():
     user = get_user_by_jwt()
@@ -378,14 +378,12 @@ def get_report():
             {"student_name": Student.query.filter_by(id=report.student_id).first().name,
              "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
              "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject,
-             "date": Lesson.query.filter_by(id=report.lesson_id).first().date.isoformat(),
+             "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
              "homework": report.homework,
              "progress_rating": report.progress_rating,
              "comment": report.comment,
              }
         )
-
-    print(report_list)
 
     return jsonify({'report_list': report_list}), 200
 
@@ -397,7 +395,7 @@ def get_report():
 
 
 @api.route('/calendar', methods=['POST'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_calendar.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_calendar.yml'))
 @jwt_required()
 def add_calendar():
     user = get_user_by_jwt()
@@ -447,7 +445,7 @@ def add_calendar():
 
 
 @api.route('/calendar/<int:teacher_id>', methods=['GET'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_calendar.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_calendar.yml'))
 @jwt_required()
 def get_calendar(teacher_id):
     user = get_user_by_jwt()
