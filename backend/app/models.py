@@ -81,7 +81,7 @@ class Lesson(db.Model):
             'teacher_id': self.teacher_id,
             'student_id': self.student_id,
             'subject': self.subject,
-            'date': self.date,
+            'date': self.date.strftime("%d/%m/%Y %H:%M"),
             'status': self.status,
             'price': self.price
         }
@@ -124,7 +124,6 @@ class LessonReport(db.Model):
             'homework': self.homework,
             'progress_rating': self.progress_rating,
             'comment': self.comment,
-            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 
