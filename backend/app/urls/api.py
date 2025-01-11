@@ -260,9 +260,18 @@ def add_invoice():
 
     return jsonify({'message': 'Invoice created'}), 201
 
-# Generated PDF path
+
+# Necassary endpoint used by the email service, not
+# meant to be used by external programs/services
+@api.route('/generated-invoice-pdf/<filename>', methods=['GET'])
+def get_pdf(filename):
+    try:
+        return send_from_directory(BASE_DIR, filename, as_attachment=True)
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 400
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static_invoices"))
+
 @api.route('/generate-and-send-invoice/<int:invoice_id>', methods=['POST'])
 @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'generate_and_send_invoice.yml'))
 def generate_and_send_invoice(invoice_id):
@@ -338,3 +347,5 @@ def generate_and_send_invoice(invoice_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+### End of invoices ###
