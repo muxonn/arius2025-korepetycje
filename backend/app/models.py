@@ -115,5 +115,6 @@ class Invoice(db.Model):
     __tablename__ = 'invoices'
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete='CASCADE'), nullable=False)
-    email_sent = db.Column(db.Boolean, default=False)
+    price = db.Column(db.Float, nullable=False) 
+    vat_rate = db.Column(db.Float, default=23.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

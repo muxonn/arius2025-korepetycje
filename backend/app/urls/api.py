@@ -1,15 +1,22 @@
-from flask import Blueprint, jsonify, request, redirect
+from flask import Blueprint, jsonify, request, redirect, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import swag_from
 from sqlalchemy import desc, and_, asc, cast, text, func, Index
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import REGCONFIG
+import sys
+import requests
 
+
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
 import os
 
 SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
 
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from pdf_generator.lesson_invoice import LessonInvoice
+from pdf_generator.pdf_generator import PDFInvoiceGenerator
 
 api = Blueprint('api', __name__)
 
@@ -218,6 +225,9 @@ def get_lesson():
 
 ### Invoices ###
 
+BASE_DIR = os.path.join(os.path.dirname(__file__), "../static_invoices")
+BASE_DIR = os.path.abspath(BASE_DIR) 
+
 @api.route('/invoice', methods=['POST'])
 # @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
 @jwt_required()
@@ -243,13 +253,88 @@ def add_invoice():
     if invoice:
         return jsonify({'message': 'Lesson already invoiced'}), 400
 
-    # TODO send email
-
-    new_invoice = Invoice(lesson_id=lesson_id)
+    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
 
     db.session.add(new_invoice)
     db.session.commit()
 
     return jsonify({'message': 'Invoice created'}), 201
 
-### End of invoices ###
+# Generated PDF path
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static_invoices"))
+@api.route('/generate-and-send-invoice/<int:invoice_id>', methods=['POST'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'generate_and_send_invoice.yml'))
+def generate_and_send_invoice(invoice_id):
+    try:
+        # Pobranie danych z bazy danych
+        invoice = Invoice.query.filter_by(id=invoice_id).first()
+        if not invoice:
+            return jsonify({"error": "Invoice not found"}), 404
+        
+        lesson = Lesson.query.filter_by(id=invoice.lesson_id).first()
+        if not lesson:
+            return jsonify({"error": "Lesson not found"}), 404
+
+        student = Student.query.filter_by(id=lesson.student_id).first()
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+
+        teacher = Teacher.query.filter_by(id=lesson.teacher_id).first()
+        if not teacher:
+            return jsonify({"error": "Teacher not found"}), 404
+
+        # Tworzenie obiektu LessonInvoice
+        lesson_invoice = LessonInvoice(
+            invoice_id=invoice.id,
+            lesson_id=lesson.id,
+            student_name=student.name,
+            student_email=student.email,
+            teacher_name=teacher.name,
+            teacher_email=teacher.email,
+            subject=lesson.subject,
+            lesson_date=lesson.date,
+            price=invoice.price,
+            vat_rate=invoice.vat_rate,
+            issue_date=invoice.created_at
+        )
+
+        # Generowanie PDF
+        generator = PDFInvoiceGenerator()
+        generator.create_invoice(lesson_invoice)  # Zapis do domyślnej lokalizacji
+
+        # Ścieżka PDF generowana przez `PDFInvoiceGenerator`
+        pdf_filename = f"invoice_{invoice_id}.pdf"
+        pdf_url = f"http://host.docker.internal:5000/api/generated-invoice-pdf/{pdf_filename}"
+
+        # Sprawdzamy, czy plik istnieje
+
+        # Wysyłanie e-maila przez mikroserwis
+        email_service_url = "http://127.0.0.1:5001/send-email"
+        email_payload = {
+            "email_receiver": "jaiwiecejmnie@gmail.com",
+            "subject": f"Invoice #{invoice_id}",
+            "body": (
+                f"Dear {student.name},\n\n"
+                "Attached is the invoice for your recent lesson.\n\n"
+                "Best regards,\n"
+                "Your Teaching Service Team"
+            ),
+            "pdf_path": pdf_url
+        }
+
+        response = requests.post(email_service_url, json=email_payload)
+        
+        # Obsługa odpowiedzi z mikroserwisu
+        if response.status_code == 200:
+            return jsonify({
+                "message": f"Invoice PDF generated and sent to {student.email}.",
+                "invoice_data": lesson_invoice.to_dict()
+            }), 200
+        else:
+            return jsonify({
+                "error": f"Failed to send email: {response.json().get('error', 'Unknown error')}"
+            }), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
