@@ -46,8 +46,11 @@ export const teachersAPI = {
     return fetchWithAuth(`/api/teacher-list?${query.toString()}`);
   },
 
-  getTeacherReviews: () => 
+  getAllTeacherReviews: () => 
     fetchWithAuth('/api/teacher-reviews'),
+
+  getOneTeacherReview: (teacherId) =>
+    fetchWithAuth(`/api/teacher-reviews/${teacherId}`),
 
   addTeacherReview: (teacherId, review) =>
     fetchWithAuth(`/api/teacher-reviews/${teacherId}`, {
@@ -59,7 +62,7 @@ export const teachersAPI = {
     fetchWithAuth(`/api/teacher-reviews/${teacherId}`, {
       method: 'DELETE'
     }),
-    
+
   getCalendar: (teacherId) => 
     fetchWithAuth(`/api/calendar/${teacherId}`),
 

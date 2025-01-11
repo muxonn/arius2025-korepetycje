@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
+import { Star, Clock, Book, FileText, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 const LessonHistory = () => {
   const [lessons, setLessons] = useState([]);
@@ -32,18 +34,20 @@ const LessonHistory = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">Lesson History</h2>
-      
-      <div className="space-y-6">
-        {lessons.map((lesson) => (
-          <LessonCard 
-            key={lesson.id} 
-            lesson={lesson}
-            report={reports.find(r => r.lesson_id === lesson.id)}
-            onLessonUpdated={fetchLessons}
-          />
-        ))}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <div className="max-w-4xl mx-auto p-6">
+        <h2 className="text-3xl font-bold text-blue-900 mb-8">Lesson history</h2>
+
+        <div className="space-y-6">
+          {lessons.map((lesson) => (
+            <LessonCard 
+              key={lesson.id} 
+              lesson={lesson}
+              report={reports.find(r => r.lesson_id === lesson.id)}
+              onLessonUpdated={() => fetchLessons()}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -52,6 +56,15 @@ const LessonHistory = () => {
 const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const handleCreateInvoice = async () => {
     try {
@@ -66,74 +79,110 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-xl font-bold">{lesson.subject}</h3>
-          <p className="text-gray-600">
-            {new Date(lesson.date).toLocaleString()}
-          </p>
-        </div>
-        <div className="space-x-2">
-          {lesson.status === 'completed' && !report && (
+    <Card className="mb-4">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          {/* Left section - Subject and Date */}
+          <div className="flex items-center space-x-8">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">{lesson.subject}</h3>
+              <div className="flex items-center mt-1">
+                <Clock size={16} className="mr-2 text-gray-500" />
+                <span className="text-gray-600">
+                  {new Date(lesson.date).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Middle section - Status */}
+          <div className="flex items-center">
+            <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(lesson.status)}`}>
+              {lesson.status.charAt(0).toUpperCase() + lesson.status.slice(1)}
+            </span>
+          </div>
+
+          {/* Right section - Actions */}
+          <div className="flex items-center space-x-4 flex-nowrap overflow-x-auto">
+            {lesson.status === 'completed' && !report && (
             <button
               onClick={() => setShowReportForm(true)}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              Add Report
+              <FileText size={16} />
+              <span>Add Report</span>
             </button>
-          )}
-          {lesson.status === 'completed' && !lesson.reviewed && (
+            )}
+            {lesson.status === 'completed' && !lesson.reviewed && (
             <button
               onClick={() => setShowReviewForm(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Add Review
+              <Star size={16} />
+              <span>Add Review</span>
             </button>
-          )}
-          <button
-            onClick={handleCreateInvoice}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Generate Invoice
-          </button>
+            )}
+            <button
+              onClick={handleCreateInvoice}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <FilePlus2 size={16} />
+              <span>Generate Invoice</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {report && (
-        <div className="mt-4 p-4 bg-gray-50 rounded">
-          <h4 className="font-bold mb-2">Lesson Report</h4>
-          <p><strong>Progress Rating:</strong> {report.progress_rating}/5</p>
-          <p><strong>Comment:</strong> {report.comment}</p>
-          {report.homework && (
-            <p><strong>Homework:</strong> {report.homework}</p>
+        {report && (
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <div className="flex items-center space-x-2 mb-3">
+            <CheckCircle size={20} className="text-blue-600" />
+            <h4 className="font-semibold text-blue-900">Lesson Report</h4>
+          </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center">
+                <Star size={16} className="text-yellow-500 mr-2" />
+                <span><strong>Progress:</strong> {report.progress_rating}/5</span>
+              </div>
+              <div className="flex items-center">
+                <MessageSquare size={16} className="text-gray-500 mr-2" />
+                <span><strong>Feedback:</strong> {report.comment}</span>
+              </div>
+              {report.homework && (
+                <div className="flex items-center">
+                <Book size={16} className="text-gray-500 mr-2" />
+                <span><strong>Homework:</strong> {report.homework}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(showReviewForm || showReportForm) && (
+        <div className="mt-4 border-t pt-4">
+          {showReviewForm && (
+          <ReviewForm 
+            teacherId={lesson.teacher_id}
+            onSubmit={() => {
+              setShowReviewForm(false);
+              onLessonUpdated();
+            }}
+            onCancel={() => setShowReviewForm(false)}
+          />
+          )}
+          {showReportForm && (
+          <ReportForm 
+            lessonId={lesson.id}
+            onSubmit={() => {
+              setShowReportForm(false);
+              onLessonUpdated();
+            }}
+            onCancel={() => setShowReportForm(false)}
+          />
           )}
         </div>
-      )}
-
-      {showReviewForm && (
-        <ReviewForm 
-          key={lesson.id} 
-          teacherId={lesson.teacher_id}
-          onSubmit={() => {
-            setShowReviewForm(false);
-            onLessonUpdated();
-          }}
-          onCancel={() => setShowReviewForm(false)}
-        />
-      )}
-
-      {showReportForm && (
-        <ReportForm 
-          lessonId={lesson.id}
-          onSubmit={() => {
-            setShowReportForm(false);
-            onLessonUpdated();
-          }}
-          onCancel={() => setShowReportForm(false)}
-        />
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -158,39 +207,44 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 bg-gray-50 rounded">
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Rating</label>
-        <select
-          value={formData.rating}
-          onChange={(e) => setFormData({...formData, rating: parseInt(e.target.value)})}
-          className="w-full p-2 border rounded"
-        >
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h4 className="text-lg font-semibold text-gray-900 mb-4">Write a Review</h4>
+      <div>
+        <label className="block text-sm font-medium mb-2 text-gray-700">Rating</label>
+        <div className="flex items-center space-x-1">
           {[5, 4, 3, 2, 1].map((value) => (
-            <option key={value} value={value}>{value} stars</option>
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFormData({...formData, rating: value})}
+              className={`p-1 ${formData.rating >= value ? 'text-yellow-400' : 'text-gray-300'}`}
+            >
+              <Star size={24} fill="currentColor" />
+            </button>
           ))}
-        </select>
+        </div>
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Comment</label>
+      <div>
+        <label className="block text-sm font-medium mb-2 text-gray-700">Comment</label>
         <textarea
           value={formData.comment}
           onChange={(e) => setFormData({...formData, comment: e.target.value})}
-          className="w-full p-2 border rounded"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           rows="3"
+          placeholder="Share your experience..."
         />
       </div>
-      <div className="flex justify-end space-x-2">
+      <div className="flex justify-end space-x-3">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border rounded hover:bg-gray-100"
+          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Submit Review
         </button>
@@ -221,50 +275,57 @@ const ReportForm = ({ lessonId, onSubmit, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 bg-gray-50 rounded">
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Progress Rating</label>
-        <select
-          value={formData.progress_rating}
-          onChange={(e) => setFormData({...formData, progress_rating: parseInt(e.target.value)})}
-          className="w-full p-2 border rounded"
-        >
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h4 className="text-lg font-semibold text-gray-900 mb-4">Create Lesson Report</h4>
+      <div>
+        <label className="block text-sm font-medium mb-2 text-gray-700">Progress Rating</label>
+        <div className="flex items-center space-x-1">
           {[5, 4, 3, 2, 1].map((value) => (
-            <option key={value} value={value}>{value} stars</option>
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFormData({...formData, progress_rating: value})}
+              className={`p-1 ${formData.progress_rating >= value ? 'text-yellow-400' : 'text-gray-300'}`}
+            >
+              <Star size={24} fill="currentColor" />
+            </button>
           ))}
-        </select>
+        </div>
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Comment</label>
+      <div>
+        <label className="block text-sm font-medium mb-2 text-gray-700">Comment</label>
         <textarea
           value={formData.comment}
           onChange={(e) => setFormData({...formData, comment: e.target.value})}
-          className="w-full p-2 border rounded"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           rows="3"
+          placeholder="Describe the lesson progress..."
         />
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Homework</label>
+      <div>
+        <label className="block text-sm font-medium mb-2 text-gray-700">Homework Assignment</label>
         <textarea
           value={formData.homework}
           onChange={(e) => setFormData({...formData, homework: e.target.value})}
-          className="w-full p-2 border rounded"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           rows="3"
+          placeholder="Assign homework for the student..."
         />
       </div>
-      <div className="flex justify-end space-x-2">
+      <div className="flex justify-end space-x-3">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border rounded hover:bg-gray-100"
+          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
-          Submit Report
+          <CheckCircle size={20} />
+          <span>Submit Report</span>
         </button>
       </div>
     </form>

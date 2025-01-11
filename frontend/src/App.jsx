@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BookOpen, History, LogOut, User, Users } from 'lucide-react';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login'
 import TeacherList from './components/TeacherList';
@@ -18,47 +19,52 @@ const NavBar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="font-bold text-xl text-blue-600">
-              TutorApp
+          <div className="flex items-center space-x-8">
+            <Link to="/" className="flex items-center space-x-2">
+              <BookOpen size={24} />
+              <span className="font-bold text-xl">TutorApp</span>
             </Link>
           </div>
           
           {localStorage.getItem('token') ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <Link 
                 to="/teachers" 
-                className="text-gray-600 hover:text-gray-900"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
               >
-                Find Teachers
+                <Users size={20} />
+                <span>Find Teachers</span>
               </Link>
               <Link 
                 to="/history" 
-                className="text-gray-600 hover:text-gray-900"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
               >
-                Lesson History
+                <History size={20} />
+                <span>Lesson History</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-red-600 hover:text-red-800"
+                className="flex items-center space-x-1 text-red-300 hover:text-red-100 transition-colors"
               >
-                Logout
+                <LogOut size={20} />
+                <span>Logout</span>
               </button>
             </div>
           ) : (
             <div className="flex items-center space-x-4">
               <Link 
                 to="/login" 
-                className="text-gray-600 hover:text-gray-900"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
               >
-                Login
+                <User size={20} />
+                <span>Login</span>
               </Link>
               <Link 
                 to="/register" 
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition-colors"
               >
                 Register
               </Link>
@@ -72,28 +78,69 @@ const NavBar = () => {
 
 const Home = () => {
   return (
-    <div className="max-w-4xl mx-auto mt-16 px-4">
-      <h1 className="text-4xl font-bold text-center mb-8">
-        Welcome to TutorApp
-      </h1>
-      <p className="text-xl text-center text-gray-600 mb-8">
-        Find the perfect tutor and start learning today
-      </p>
-      <div className="flex justify-center space-x-4">
-        <Link
-          to="/register"
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
-        >
-          Get Started
-        </Link>
-        <Link
-          to="/teachers"
-          className="bg-white text-blue-500 px-6 py-3 rounded-lg border-2 border-blue-500 hover:bg-blue-50"
-        >
-          Browse Teachers
-        </Link>
+    <div className="relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-50 -z-10" />
+      <div className="max-w-4xl mx-auto mt-16 px-4 pb-16">
+        <div className="text-center space-y-6">
+          <h1 className="text-5xl font-bold text-blue-900">
+            Welcome to TutorApp
+          </h1>
+          <p className="text-xl text-blue-700 max-w-2xl mx-auto">
+            Connect with expert tutors and transform your learning journey. 
+            Schedule personalized lessons that fit your needs and goals.
+          </p>
+          <div className="flex justify-center space-x-4 mt-8">
+            <Link
+              to="/register"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-full text-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-colors shadow-lg"
+            >
+              Get Started Today
+            </Link>
+            <Link
+              to="/teachers"
+              className="bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-medium border-2 border-blue-600 hover:bg-blue-50 transition-colors shadow-md"
+            >
+              Browse Teachers
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
+  );
+};
+
+const Footer = () => {
+  return (
+    <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+      <div className="max-w-7xl mx-auto py-12 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">About TutorApp</h3>
+            <p className="text-gray-400">
+              Connecting students with qualified tutors for personalized learning experiences.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2 text-gray-400">
+              <li><Link to="/teachers" className="hover:text-white transition-colors">Find Teachers</Link></li>
+              <li><Link to="/register" className="hover:text-white transition-colors">Become a Tutor</Link></li>
+              <li><Link to="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Contact</h3>
+            <p className="text-gray-400">
+              Email: support@tutorapp.com<br />
+              Phone: (555) 123-4567
+            </p>
+          </div>
+        </div>
+        <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
+          <p>© {new Date().getFullYear()} TutorApp. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
   );
 };
 
@@ -134,14 +181,8 @@ const App = () => {
             />
           </Routes>
         </main>
-
-        <footer className="bg-white border-t mt-auto">
-          <div className="max-w-7xl mx-auto py-6 px-4">
-            <p className="text-center text-gray-600">
-              © {new Date().getFullYear()} TutorApp. All rights reserved.
-            </p>
-          </div>
-        </footer>
+        
+        <Footer />
       </div>
     </Router>
   );

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { teachersAPI } from '../services/api';
+import { Star, Calendar, Book, Award } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const TeacherList = () => {
   const [teachers, setTeachers] = useState([]);
@@ -24,42 +26,54 @@ const TeacherList = () => {
   }, [filters]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6 bg-white rounded-lg shadow-md p-4">
-        <h2 className="text-2xl font-bold mb-4">Search Teachers</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Subject</label>
-            <input
-              type="text"
-              value={filters.subject}
-              onChange={(e) => setFilters({...filters, subject: e.target.value})}
-              className="w-full p-2 border rounded"
-              placeholder="Enter subject..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Difficulty Level</label>
-            <select
-              value={filters.difficulty}
-              onChange={(e) => setFilters({...filters, difficulty: e.target.value})}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">All Levels</option>
-              <option value="elementary">Elementary School</option>
-              <option value="middle">Middle School</option>
-              <option value="high">High School</option>
-            </select>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <div className="max-w-6xl mx-auto p-6">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-blue-900">Find Your Perfect Tutor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Subject</label>
+                <div className="relative">
+                  <Book className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    value={filters.subject}
+                    onChange={(e) => setFilters({...filters, subject: e.target.value})}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter subject..."
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Difficulty Level</label>
+                <div className="relative">
+                  <Award className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <select
+                    value={filters.difficulty}
+                    onChange={(e) => setFilters({...filters, difficulty: e.target.value})}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  >
+                    <option value="">All Levels</option>
+                    <option value="elementary">Elementary School</option>
+                    <option value="middle">Middle School</option>
+                    <option value="high">High School</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {teachers.map((teacher) => (
           <TeacherCard key={teacher.id} teacher={teacher} />
         ))}
       </div>
     </div>
+  </div>
   );
 };
 
@@ -73,40 +87,50 @@ const TeacherCard = ({ teacher }) => {
 
   const fetchTeacherRating = async () => {
     try {
-      const response = await fetch(`/api/teacher-reviews/${teacher.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const avgRating = data.reviews.reduce((acc, rev) => acc + rev.rating, 0) / data.reviews.length;
-        setRating(avgRating || 0);
-      }
+      const data = await teachersAPI.getOneTeacherReview(teacher.id);
+      const avgRating = data.reviews.reduce((acc, rev) => acc + rev.rating, 0) / data.reviews.length;
+      setRating(avgRating || 0);
     } catch (error) {
       console.error('Failed to fetch teacher rating:', error);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
-      <h3 className="text-xl font-bold mb-2">{teacher.name}</h3>
-      <div className="mb-2">
-        <span className="font-medium">Subjects:</span> {teacher.subjects.join(', ')}
-      </div>
-      <div className="mb-2">
-        <span className="font-medium">Difficulty Levels:</span> {teacher.difficulty_levels.join(', ')}
-      </div>
-      <div className="mb-4">
-        <span className="font-medium">Rating:</span> {rating.toFixed(1)} / 5.0
-      </div>
-      <button
-        onClick={() => navigate(`/schedule/${teacher.id}`)}
-        className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-      >
-        Schedule Lesson
-      </button>
-    </div>
+    <Card className="hover:shadow-lg transition-shadow duration-300">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-1">{teacher.name}</h3>
+            <div className="flex items-center space-x-1 text-yellow-500">
+              <Star size={16} fill="currentColor" />
+              <span className="text-sm">{rating.toFixed(1)}</span>
+            </div>
+          </div>
+          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+            ${teacher.hourly_rate}/hr
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center text-gray-600">
+            <Book size={16} className="mr-2" />
+            <span className="text-sm">{teacher.subjects.join(', ')}</span>
+          </div>
+          <div className="flex items-center text-gray-600">
+            <Award size={16} className="mr-2" />
+            <span className="text-sm">{teacher.difficulty_levels.join(', ')}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => navigate(`/schedule/${teacher.id}`)}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors flex items-center justify-center space-x-2"
+        >
+          <Calendar size={20} />
+          <span>Schedule Lesson</span>
+        </button>
+      </CardContent>
+    </Card>
   );
 };
 
