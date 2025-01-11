@@ -19,10 +19,10 @@ const NavBar = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+    <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg w-full">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center space-x-8">
+        <div className="flex justify-between items-center h-16 w-full">
+          <div className="flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
               <BookOpen size={24} />
               <span className="font-bold text-xl">TutorApp</span>
@@ -30,41 +30,41 @@ const NavBar = () => {
           </div>
           
           {localStorage.getItem('token') ? (
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-6 flex-nowrap">
               <Link 
                 to="/teachers" 
-                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
               >
                 <Users size={20} />
                 <span>Find Teachers</span>
               </Link>
               <Link 
                 to="/history" 
-                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
               >
                 <History size={20} />
                 <span>Lesson History</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-1 text-red-300 hover:text-red-100 transition-colors"
+                className="flex items-center space-x-1 text-red-300 hover:text-red-100 transition-colors whitespace-nowrap"
               >
                 <LogOut size={20} />
                 <span>Logout</span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-nowrap">
               <Link 
                 to="/login" 
-                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
               >
                 <User size={20} />
                 <span>Login</span>
               </Link>
               <Link 
                 to="/register" 
-                className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition-colors"
+                className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
               >
                 Register
               </Link>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { lessonsAPI, teachersAPI } from '../services/api';
 
 const Schedule = () => {
@@ -11,6 +11,7 @@ const Schedule = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [subject, setSubject] = useState('');
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   useEffect(() => {
     const fetchCalendar = async () => {
@@ -19,6 +20,12 @@ const Schedule = () => {
         setCalendar(data);
       } catch (error) {
         console.error('Failed to fetch calendar:', error);
+        setAlert({
+          type: 'error',
+          title: 'Error',
+          description: 'Failed to fetch the calendar. Please try again later.',
+          icon: <AlertCircle className="h-5 w-5 text-red-500" />
+        });
       }
     };
 
@@ -31,20 +38,24 @@ const Schedule = () => {
     try {
       const dateTime = `${selectedDate} ${selectedTime}`;
       await lessonsAPI.scheduleLesson({
-      teacher_id: teacherId,
+        teacher_id: teacherId,
         subject,
-      date: dateTime
+        date: dateTime
       });
       
-      Alert({ 
+      setAlert({
+        type: 'success',
         title: 'Success', 
-        description: 'Your lesson has been scheduled successfully!'
+        description: 'Your lesson has been scheduled successfully!',
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
-      Alert({
-        icon: <AlertCircle className="h-5 w-5" />,
+      console.error('Failed to schedule the lesson:', error);
+      setAlert({
+        type: 'error',
         title: 'Error',
-        description: error
+        description: 'Failed to schedule the lesson. Please try again later.',
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
       });
     }
   };
@@ -57,7 +68,9 @@ const Schedule = () => {
     const end = new Date(`2000-01-01 ${calendar.available_until}`);
     
     while (current < end) {
-      slots.push(current.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      slots.push(
+        current.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+      );
       current.setHours(current.getHours() + 1);
     }
     
@@ -74,6 +87,15 @@ const Schedule = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              {/* Jeśli alert istnieje, wyświetl go */}
+              {alert && (
+                <Alert variant="destructive" className="mb-4 flex items-start space-x-3">
+                  {alert.icon}
+                  <AlertTitle>{alert.title}</AlertTitle>
+                  <AlertDescription>{alert.description}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">Select Date</label>
@@ -81,7 +103,11 @@ const Schedule = () => {
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type="date"
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      onChange={(e) => {
+                        const rawDate = e.target.value; // YYYY-MM-DD
+                        const formattedDate = rawDate.split('-').reverse().join('/'); // DD/MM/YYYY
+                        setSelectedDate(formattedDate);
+                      }}
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       min={new Date().toISOString().split('T')[0]}
                     />

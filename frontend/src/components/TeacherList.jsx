@@ -114,11 +114,11 @@ const TeacherCard = ({ teacher }) => {
         <div className="space-y-3 mb-6">
           <div className="flex items-center text-gray-600">
             <Book size={16} className="mr-2" />
-            <span className="text-sm">{teacher.subjects.join(', ')}</span>
+            <span className="text-sm">{Array.isArray(teacher.subjects) ? teacher.subjects.join(', ') : 'No subjects available'}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Award size={16} className="mr-2" />
-            <span className="text-sm">{teacher.difficulty_levels.join(', ')}</span>
+            <span className="text-sm">{Array.isArray(teacher.difficulty_levels) ? teacher.difficulty_levels.join(', ') : 'No levels available'}</span>
           </div>
         </div>
 
