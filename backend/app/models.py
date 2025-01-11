@@ -48,16 +48,17 @@ class Teacher(BaseUser):
     __tablename__ = 'teachers'
     id = db.Column(None, db.ForeignKey('baseusers.id'), primary_key=True)
 
-    subjects = db.Column(db.String(255), nullable=True)  # Comma-separated subjects
-    difficulty_levels = db.Column(db.String(255), nullable=True)  # Comma-separated levels (e.g., "primary,high")
+    subject_ids = db.Column(db.String(255), nullable=True)  # Comma-separated subject ids
+    difficulty_level_ids = db.Column(db.String(255), nullable=True)  # Comma-separated level ids
+    hourly_rate = db.Column(db.Integer, nullable=True)
     bio = db.Column(db.Text, nullable=True)
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
-            'subjects': self.subjects,
-            'difficulty_levels': self.difficulty_levels,
+            'subjects': self.subject_ids,
+            'difficulty_levels': self.difficulty_level_ids,
             'bio': self.bio
         }
 
@@ -70,9 +71,12 @@ class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    subject = db.Column(db.String(100), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
+    difficulty_level_id = db.Column(db.Integer, db.ForeignKey('difficultyLevels.id'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')  # 'scheduled', 'completed', 'cancelled'
+    is_reviewed = db.Column(db.Boolean, nullable=False, default=False)
+    is_reported = db.Column(db.Boolean, nullable=False, default=False)
     price = db.Column(db.Float, nullable=False)
 
     def to_dict(self):
@@ -80,7 +84,7 @@ class Lesson(db.Model):
             'id': self.id,
             'teacher_id': self.teacher_id,
             'student_id': self.student_id,
-            'subject': self.subject,
+            'subject': self.subject_id,
             'date': self.date.strftime("%d/%m/%Y %H:%M"),
             'status': self.status,
             'price': self.price
@@ -153,3 +157,27 @@ class Invoice(db.Model):
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete='CASCADE'), nullable=False)
     email_sent = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Subject(db.Model):
+    __tablename__ = 'subjects'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+
+class DifficultyLevel(db.Model):
+    __tablename__ = 'difficultyLevels'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(30), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
