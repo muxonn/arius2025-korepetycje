@@ -48,9 +48,20 @@ class Teacher(BaseUser):
     __tablename__ = 'teachers'
     id = db.Column(None, db.ForeignKey('baseusers.id'), primary_key=True)
 
-    subjects = db.Column(db.String(255), nullable=True)  # Comma-separated subjects
-    difficulty_levels = db.Column(db.String(255), nullable=True)  # Comma-separated levels (e.g., "primary,high")
+    subject_ids = db.Column(db.String(255), nullable=True)  # Comma-separated subject ids
+    difficulty_level_ids = db.Column(db.String(255), nullable=True)  # Comma-separated level ids
+    hourly_rate = db.Column(db.Integer, nullable=True)
     bio = db.Column(db.Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'subjects': self.subject_ids,
+            'difficulty_levels': self.difficulty_level_ids,
+            'bio': self.bio
+        }
+
 
     __mapper_args__ = {'polymorphic_identity': 'teacher'}
 
@@ -60,9 +71,12 @@ class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    subject = db.Column(db.String(100), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
+    difficulty_level_id = db.Column(db.Integer, db.ForeignKey('difficultyLevels.id'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')  # 'scheduled', 'completed', 'cancelled'
+    is_reviewed = db.Column(db.Boolean, nullable=False, default=False)
+    is_reported = db.Column(db.Boolean, nullable=False, default=False)
     price = db.Column(db.Float, nullable=False)
 
     def to_dict(self):
@@ -70,8 +84,8 @@ class Lesson(db.Model):
             'id': self.id,
             'teacher_id': self.teacher_id,
             'student_id': self.student_id,
-            'subject': self.subject,
-            'date': self.date,
+            'subject': self.subject_id,
+            'date': self.date.strftime("%d/%m/%Y %H:%M"),
             'status': self.status,
             'price': self.price
         }
@@ -80,15 +94,41 @@ class Calendar(db.Model):
     __tablename__ = 'calendars'
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
-    availability = db.Column(db.Text, nullable=False)  # JSON or serialized availability
-    
+    available_from = db.Column(db.Time, nullable=False)
+    available_until = db.Column(db.Time, nullable=False)
+    working_days = db.Column(db.Text, nullable=False)  # List of ISO format weekdays (1-7)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'teacher_id': self.teacher_id,
+            'available_from': self.available_from.strftime("%H:%M"),
+            'available_until': self.available_until.strftime("%H:%M"),
+            'working_days': self.working_days
+        }
+
+
 class LessonReport(db.Model):
     __tablename__ = 'lesson_reports'
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete='CASCADE'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    report_text = db.Column(db.Text, nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    homework = db.Column(db.Text, nullable=False)
+    progress_rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'lesson_id': self.lesson_id,
+            'student_id': self.student_id,
+            'teacher_id': self.teacher_id,
+            'homework': self.homework,
+            'progress_rating': self.progress_rating,
+            'comment': self.comment,
+        }
 
 
 class Review(db.Model):

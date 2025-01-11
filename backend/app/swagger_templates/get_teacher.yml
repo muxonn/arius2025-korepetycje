@@ -1,0 +1,62 @@
+tags:
+  - Teachers
+summary: Get a list of teachers
+description: Retrieve a list of teachers optionally filtered by subject or difficulty level.
+operationId: getTeacherList
+parameters:
+  - name: subject
+    in: query
+    required: false
+    type: string
+    example: "Mathematics"
+    description: Filter teachers by subject.
+  - name: difficulty
+    in: query
+    required: false
+    type: string
+    example: "Primary"
+    description: Filter teachers by levels of education.
+responses:
+  200:
+    description: Successfully retrieved teacher list.
+    schema:
+      type: object
+      properties:
+        teacher_list:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 5
+              name:
+                type: string
+                example: "John Doe"
+              subjects:
+                type: array
+                items:
+                  type: string
+                  example: "English"
+              difficulty_levels:
+                type: array
+                items:
+                  type: string
+                  example: "Bachelor"
+              bio:
+                type: string
+                example: "Native speaker"
+  400:
+    description: User not found.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "User not found"
+  404:
+    description: No teachers found.
+security:
+  - jwt: []
+
+

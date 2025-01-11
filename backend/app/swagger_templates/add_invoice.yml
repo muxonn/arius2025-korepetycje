@@ -1,0 +1,39 @@
+tags:
+  - Invoices
+summary: Create an invoice for a lesson
+description: Allows a student to generate an invoice for a completed lesson.
+operationId: addInvoice
+parameters:
+  - name: body
+    in: body
+    required: true
+    schema:
+      type: object
+      properties:
+        lesson_id:
+          type: integer
+          example: 12
+          description: ID of the lesson for which the invoice is being created.
+responses:
+  201:
+    description: Invoice successfully created.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invoice created"
+  400:
+    description: Errors such as invalid lesson ID or duplicate invoice.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Lesson already invoiced"
+  401:
+    description: Unauthorized access.
+  500:
+    description: Internal server error.
+security:
+  - jwt: []
