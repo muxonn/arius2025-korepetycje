@@ -3,12 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from models import db
 from urls.auth import auth
-from urls.api import api
+from urls.api import api, update_lesson_status_helper
 from config import Config
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flasgger import Swagger
 from sqlalchemy.exc import OperationalError
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 CORS(app)
@@ -20,9 +21,12 @@ try:
     # Initialize the app
     db.init_app(app)
 
-    # Try creating tables
+    # Try creating tables and start scheduler
     with app.app_context():
-        db.create_all() 
+        db.create_all()
+        back_scheduler = BackgroundScheduler()
+        back_scheduler.add_job(func=update_lesson_status_helper, trigger="interval", minutes=30)
+        back_scheduler.start()
 except OperationalError as e:
     print("Database connection failed. Please ensure the database is running and accessible.")
     print(f"Error: {e}")
@@ -47,6 +51,7 @@ swagger = Swagger(app, template={
 app.register_blueprint(auth, url_prefix="/auth")
 app.register_blueprint(api, url_prefix="/api")
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return jsonify({"error": "Page not found"}), 404
@@ -54,6 +59,7 @@ def page_not_found(e):
 
 # if __name__ == '__main__': 
 #     app.run(port=5000, debug=True)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

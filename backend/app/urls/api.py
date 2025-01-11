@@ -1,3 +1,4 @@
+import requests
 from flask import Blueprint, jsonify, request, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import swag_from
@@ -10,7 +11,7 @@ import os
 
 SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
 
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, DifficultyLevel, db
 
 api = Blueprint('api', __name__)
 
@@ -30,6 +31,18 @@ def page_not_found(e):
     return jsonify({"error": "Page not found"}), 404
 
 
+@api.route('/subjects', methods=['GET'])
+def get_subjects():
+    subjects = Subject.query.all()
+    return jsonify({'subjects': [s.to_dict() for s in subjects]}), 200
+
+
+@api.route('/difficulty-levels', methods=['GET'])
+def get_difficulty_levels():
+    difficulty_levels = DifficultyLevel.query.all()
+    return jsonify({'difficulty_levels': [d.to_dict() for d in difficulty_levels]}), 200
+
+
 ### Teacher list ###
 
 @api.route('/teacher-list', methods=['GET'])
@@ -38,18 +51,18 @@ def page_not_found(e):
 def get_teacher_list():
     user = get_user_by_jwt()
     subject = request.args.get('subject')
-    difficulty = request.args.get('difficulty')
+    difficulty_id = request.args.get('difficulty_id')
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
-    if subject and difficulty:
+    if subject and difficulty_id:
         teachers = Teacher.query.filter(Teacher.subjects.match(subject),
-                                        Teacher.difficulty_levels.match(difficulty)).all()
+                                        Teacher.difficulty_levels.match(difficulty_id)).all()
     elif subject:
         teachers = Teacher.query.filter(Teacher.subjects.match(subject)).all()
-    elif difficulty:
-        teachers = Teacher.query.filter(Teacher.difficulty_levels.match(difficulty)).all()
+    elif difficulty_id:
+        teachers = Teacher.query.filter(Teacher.difficulty_levels.match(difficulty_id)).all()
     else:
         teachers = Teacher.query.all()
 
@@ -63,6 +76,54 @@ def get_teacher_list():
 
 ### End of teacher list ###
 
+@api.route('/teacher-update', methods=['PUT'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'update_teacher.yml'))
+@jwt_required()
+def update_teacher():
+    user = get_user_by_jwt()
+
+    data = request.get_json()
+    subject_ids = data.get('subject_ids')
+    difficulty_level_ids = data.get('difficulty_ids')
+    hourly_rate = data.get('hourly_rate')
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    if user.role != 'teacher':
+        return jsonify({'message': 'User can not be a student'}), 400
+
+    try:
+        if subject_ids:
+            if all(Subject.query.get(int(s)) for s in subject_ids):
+                db.session.query(Teacher).filter_by(id=user.id).update({'subject_ids': subject_ids})
+            else:
+                return jsonify({'message': 'Subject not found'}), 404
+    except ValueError:
+        return jsonify({'message': 'Subject ids can only contain numbers'}), 400
+
+    try:
+        if difficulty_level_ids:
+            if all(DifficultyLevel.query.get(int(s)) for s in difficulty_level_ids):
+                db.session.query(Teacher).filter_by(id=user.id).update({'difficulty_level_ids': difficulty_level_ids})
+            else:
+                return jsonify({'message': 'Difficulty level not found'}), 404
+    except ValueError:
+        return jsonify({'message': 'Difficulty levels ids can only contain numbers'}), 400
+
+    try:
+        if hourly_rate:
+            hourly_rate = int(hourly_rate)
+            db.session.query(Teacher).filter_by(id=user.id).update({'hourly_rate': hourly_rate})
+    except ValueError:
+        return jsonify({'message': 'Hourly rate can only be an integer'}), 400
+
+    db.session.commit()
+    return jsonify({'message': 'Teacher details updated'}), 200
+
+
+
+
 ### Reviews ###
 
 @api.route('/teacher-reviews', methods=['GET'])
@@ -72,7 +133,7 @@ def get_reviews():
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     reviews = Review.query.all()
     reviews_list = [r.to_dict() for r in reviews]
@@ -87,7 +148,7 @@ def get_reviews_by_id(teacher_id):
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     try:
         teacher_id = int(teacher_id)
@@ -112,7 +173,7 @@ def add_review(teacher_id):
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'student':
         return jsonify({'message': 'User can not be a teacher'}), 400
@@ -156,7 +217,7 @@ def delete_review(teacher_id):
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'student':
         return jsonify({'message': 'User can not be a teacher'}), 400
@@ -183,18 +244,42 @@ def add_lesson():
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'student':
         return jsonify({'message': 'User can not be a teacher'}), 400
 
     data = request.get_json()
     teacher_id = data.get('teacher_id')
-    subject = data.get('subject')
+    subject_id = data.get('subject_id')
+    difficulty_level_id = data.get('difficulty_id')
     date = data.get('date')
 
-    if not subject:
+    if not subject_id:
         return jsonify({'message': 'Subject must be provided'}), 400
+
+    try:
+        subject_id = int(subject_id)
+    except ValueError:
+        return jsonify({'message': 'Subject id must be an integer'}), 400
+
+    subject = Subject.query.get(subject_id)
+
+    if not subject:
+        return jsonify({'message': 'Subject not found'}), 404
+
+    if not difficulty_level_id:
+        return jsonify({'message': 'Difficulty level must be provided'}), 400
+
+    try:
+        difficulty_level_id = int(difficulty_level_id)
+    except ValueError:
+        return jsonify({'message': 'Difficulty level id must be an integer'}), 400
+
+    difficulty_level = Subject.query.get(difficulty_level_id)
+
+    if not difficulty_level:
+        return jsonify({'message': 'Difficulty level not found'}), 404
 
     if not date:
         return jsonify({'message': 'Date must be provided'}), 400
@@ -225,11 +310,14 @@ def add_lesson():
     if date.isoweekday() not in set(map(int, calendar.working_days[1:-1].split(','))):
         return jsonify({'message': 'Teacher does not work on this weekday'}), 400
 
-    if not (calendar.available_from < date.time() and (date+timedelta(hours=1)).time() <= calendar.available_until):
+    if not (calendar.available_from < date.time() and (date + timedelta(hours=1)).time() <= calendar.available_until):
         return jsonify({'message': 'Teacher does not work in this hours'}), 400
 
-    if subject not in Teacher.query.filter_by(id=teacher_id).first().subjects:
+    if subject_id not in set(map(int, teacher.subject_ids[1:-1].split(','))):
         return jsonify({'message': 'Teacher does not teach this subject'}), 400
+
+    if difficulty_level_id not in set(map(int, teacher.difficulty_level_ids[1:-1].split(','))):
+        return jsonify({'message': 'Teacher does not teach on this difficulty level'}), 400
 
     if Lesson.query.filter_by(teacher_id=teacher_id, date=date).first():
         return jsonify({'message': 'Lesson with this teacher is already booked for this date'}), 400
@@ -237,8 +325,14 @@ def add_lesson():
     if Lesson.query.filter_by(student_id=user.id, date=date).first():
         return jsonify({'message': 'User has already booked lesson for this date'}), 400
 
-    new_lesson = Lesson(teacher_id=teacher_id, student_id=user.id, date=date, subject=subject, status="scheduled",
-                        price=0)
+    new_lesson = Lesson(teacher_id=teacher_id,
+                        student_id=user.id,
+                        date=date,
+                        subject_id=subject_id,
+                        difficulty_level_id=difficulty_level_id,
+                        status="scheduled",
+                        price=teacher.hourly_rate
+                        )
 
     db.session.add(new_lesson)
     db.session.commit()
@@ -251,15 +345,54 @@ def add_lesson():
 @jwt_required()
 def get_lesson():
     user = get_user_by_jwt()
+    status = request.args.get('status')
     lessons = None
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
-    if user.role == 'student':
-        lessons = Lesson.query.filter_by(student_id=user.id).all()
-    elif user.role == 'teacher':
-        lessons = Lesson.query.filter_by(teacher_id=user.id).all()
+    if status:
+        if status in ['scheduled', 'completed']:
+            if user.role == 'student':
+                lessons = Lesson.query.filter_by(student_id=user.id, status=status).all()
+            elif user.role == 'teacher':
+                lessons = Lesson.query.filter_by(teacher_id=user.id, status=status).all()
+        else:
+            return jsonify({'message': 'Invalid status'}), 400
+    else:
+        if user.role == 'student':
+            lessons = Lesson.query.filter_by(student_id=user.id).all()
+        elif user.role == 'teacher':
+            lessons = Lesson.query.filter_by(teacher_id=user.id).all()
+
+    if not lessons:
+        return jsonify({'message': 'No lessons found'}), 400
+
+    lesson_list = [lesson.to_dict() for lesson in lessons]
+
+    return jsonify(lesson_list=lesson_list), 200
+
+
+@api.route('/lesson/<int:teacher_id>', methods=['GET'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_lesson_by_id.yml'))
+@jwt_required()
+def get_lesson_by_id(teacher_id):
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    try:
+        teacher_id = int(teacher_id)
+    except ValueError:
+        return jsonify({'message': 'Teacher id must be an integer'}), 400
+
+    teacher = Teacher.query.filter_by(id=teacher_id).first()
+
+    if not teacher:
+        return jsonify({'message': 'Teacher not found'}), 404
+
+    lessons = Lesson.query.filter_by(teacher_id=teacher_id).all()
 
     if not lessons:
         return jsonify({'message': 'No lessons found'}), 400
@@ -281,7 +414,7 @@ def add_invoice():
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'student':
         return jsonify({'message': 'User can not be a teacher'}), 400
@@ -321,7 +454,7 @@ def add_report():
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'teacher':
         return jsonify({'message': 'User can not be a student'}), 400
@@ -362,6 +495,9 @@ def add_report():
     if progress_rating < 0 or progress_rating > 5:
         return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
 
+    if lesson.is_reported:
+        return jsonify({'message': 'Lesson is already reported'}), 400
+
     if not comment:
         comment = ''
 
@@ -373,9 +509,11 @@ def add_report():
         comment=comment,
         progress_rating=progress_rating,
         homework=homework,
-        student_id=lesson.student_id
+        student_id=lesson.student_id,
+        teacher_id=lesson.teacher_id
     )
 
+    db.session.query(Lesson).filter_by(id=lesson_id).update({'is_reported': True})
     db.session.add(new_report)
     db.session.commit()
 
@@ -390,7 +528,7 @@ def get_report():
     reports = None
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role == 'student':
         reports = LessonReport.query.filter_by(student_id=user.id).all()
@@ -405,7 +543,7 @@ def get_report():
         report_list.append(
             {"student_name": Student.query.filter_by(id=report.student_id).first().name,
              "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
-             "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject,
+             "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
              "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
              "homework": report.homework,
              "progress_rating": report.progress_rating,
@@ -429,7 +567,7 @@ def add_calendar():
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     if user.role != 'teacher':
         return jsonify({'message': 'User can not be a student'}), 400
@@ -479,7 +617,7 @@ def get_calendar(teacher_id):
     user = get_user_by_jwt()
 
     if not user:
-        return jsonify({'message': 'User not found'}), 400
+        return jsonify({'message': 'User not found'}), 401
 
     calendar = Calendar.query.filter_by(teacher_id=teacher_id).first()
 
@@ -489,3 +627,22 @@ def get_calendar(teacher_id):
     return jsonify(calendar.to_dict()), 200
 
 ### End of calendars ###
+
+
+@api.route('/update-lesson-status', methods=['POST'])
+def update_lesson_status():
+    current_time = datetime.utcnow()
+    lessons_to_update = Lesson.query.filter(
+        Lesson.date < current_time,
+        Lesson.status == 'scheduled'
+    ).all()
+
+    for lesson in lessons_to_update:
+        lesson.status = 'completed'
+
+    db.session.commit()
+    return jsonify({'message': f'Updated {len(lessons_to_update)} lessons'}), 200
+
+
+def update_lesson_status_helper():
+    response = requests.post("http://localhost:5000/api/update-lesson-status")
