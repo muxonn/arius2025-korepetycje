@@ -9,7 +9,7 @@ import sys
 import requests
 
 
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db, Subject, DifficultyLevel
 import os
 
 SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
