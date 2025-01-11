@@ -216,13 +216,16 @@ def add_lesson():
 
     calendar = Calendar.query.filter_by(teacher_id=teacher_id).first()
 
+    if not calendar:
+        return jsonify({'message': 'Teacher does not hav a calendar set'}), 400
+
     if date < datetime.utcnow():
         return jsonify({'message': 'Lesson time must be in the future'}), 400
 
     if date.isoweekday() not in set(map(int, calendar.working_days[1:-1].split(','))):
         return jsonify({'message': 'Teacher does not work on this weekday'}), 400
 
-    if not (calendar.available_from < date.time() <= (calendar.available_until-timedelta(hours=1))):
+    if not (calendar.available_from < date.time() and (date+timedelta(hours=1)).time() <= calendar.available_until):
         return jsonify({'message': 'Teacher does not work in this hours'}), 400
 
     if subject not in Teacher.query.filter_by(id=teacher_id).first().subjects:
@@ -484,6 +487,5 @@ def get_calendar(teacher_id):
         return jsonify({'message': 'Calendar not found'}), 404
 
     return jsonify(calendar.to_dict()), 200
-
 
 ### End of calendars ###
