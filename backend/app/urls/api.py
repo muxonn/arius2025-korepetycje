@@ -80,6 +80,31 @@ def get_reviews():
     return jsonify(reviews=reviews_list), 200
 
 
+@api.route('/teacher-reviews/<int:teacher_id>', methods=['GET'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_reviews_by_id.yml'))
+@jwt_required()
+def get_reviews_by_id(teacher_id):
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 400
+
+    try:
+        teacher_id = int(teacher_id)
+    except ValueError:
+        return jsonify({'message': 'Teacher id must be an integer'}), 400
+
+    teacher = Teacher.query.get(teacher_id)
+
+    if not teacher:
+        return jsonify({'message': 'Teacher not found'}), 404
+
+    reviews = Review.query.filter_by(teacher_id=teacher_id).all()
+    reviews_list = [r.to_dict() for r in reviews]
+
+    return jsonify(reviews=reviews_list), 200
+
+
 @api.route('/teacher-reviews/<int:teacher_id>', methods=['POST'])
 @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_review.yml'))
 @jwt_required()
