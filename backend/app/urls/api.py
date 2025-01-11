@@ -1,4 +1,3 @@
-import requests
 from flask import Blueprint, jsonify, request, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import swag_from
@@ -6,12 +5,16 @@ from datetime import datetime, timedelta
 from sqlalchemy import desc, and_, asc, cast, text, func, Index
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import REGCONFIG
+import sys
+import requests
 
+
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
 import os
 
 SWAGGER_TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../swagger_templates'))
 
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, DifficultyLevel, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, db
 
 api = Blueprint('api', __name__)
 
@@ -407,6 +410,9 @@ def get_lesson_by_id(teacher_id):
 
 ### Invoices ###
 
+BASE_DIR = os.path.join(os.path.dirname(__file__), "../static_invoices")
+BASE_DIR = os.path.abspath(BASE_DIR) 
+
 @api.route('/invoice', methods=['POST'])
 @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
 @jwt_required()
@@ -432,217 +438,11 @@ def add_invoice():
     if invoice:
         return jsonify({'message': 'Lesson already invoiced'}), 400
 
-    # TODO send email
-
-    new_invoice = Invoice(lesson_id=lesson_id)
+    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
 
     db.session.add(new_invoice)
     db.session.commit()
 
     return jsonify({'message': 'Invoice created'}), 201
 
-
 ### End of invoices ###
-
-
-### Reports ###
-
-@api.route('/report', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_report.yml'))
-@jwt_required()
-def add_report():
-    user = get_user_by_jwt()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    if user.role != 'teacher':
-        return jsonify({'message': 'User can not be a student'}), 400
-
-    data = request.get_json()
-    lesson_id = data.get('lesson_id')
-    comment = data.get('comment')
-    homework = data.get('homework')
-    progress_rating = data.get('progress_rating')
-
-    if not lesson_id:
-        return jsonify({'message': 'Lesson id not provided'}), 400
-
-    try:
-        lesson_id = int(lesson_id)
-    except ValueError:
-        return jsonify({'message': 'Lesson id must be an integer'}), 400
-
-    lesson = Lesson.query.filter_by(id=lesson_id).first()
-
-    if not lesson:
-        return jsonify({'message': 'Lesson not found'}), 404
-
-    if user.id != lesson.teacher_id:
-        return jsonify({'message': 'Teacher does not belong to this lesson and cannot create report'}), 400
-
-    if lesson.date + timedelta(hours=1) > datetime.now():
-        return jsonify({'message': 'Report cannot be created before the end of the lesson'}), 400
-
-    if not progress_rating:
-        return jsonify({'message': 'Rating must be provided'}), 400
-
-    try:
-        progress_rating = int(progress_rating)
-    except ValueError:
-        return jsonify({'message': 'Progress rating must be an integer'}), 400
-
-    if progress_rating < 0 or progress_rating > 5:
-        return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
-
-    if lesson.is_reported:
-        return jsonify({'message': 'Lesson is already reported'}), 400
-
-    if not comment:
-        comment = ''
-
-    if not homework:
-        homework = ''
-
-    new_report = LessonReport(
-        lesson_id=lesson_id,
-        comment=comment,
-        progress_rating=progress_rating,
-        homework=homework,
-        student_id=lesson.student_id,
-        teacher_id=lesson.teacher_id
-    )
-
-    db.session.query(Lesson).filter_by(id=lesson_id).update({'is_reported': True})
-    db.session.add(new_report)
-    db.session.commit()
-
-    return jsonify({'message': 'Report created'}), 201
-
-
-@api.route('/report', methods=['GET'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report.yml'))
-@jwt_required()
-def get_report():
-    user = get_user_by_jwt()
-    reports = None
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    if user.role == 'student':
-        reports = LessonReport.query.filter_by(student_id=user.id).all()
-    elif user.role == 'teacher':
-        reports = LessonReport.query.filter_by(teacher_id=user.id).all()
-
-    if not reports:
-        return jsonify({'message': 'No reports found'}), 400
-
-    report_list = []
-    for report in reports:
-        report_list.append(
-            {"student_name": Student.query.filter_by(id=report.student_id).first().name,
-             "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
-             "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
-             "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
-             "homework": report.homework,
-             "progress_rating": report.progress_rating,
-             "comment": report.comment,
-             }
-        )
-
-    return jsonify({'report_list': report_list}), 200
-
-
-### End of reports ###
-
-
-### Calendars ###
-
-
-@api.route('/calendar', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_calendar.yml'))
-@jwt_required()
-def add_calendar():
-    user = get_user_by_jwt()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    if user.role != 'teacher':
-        return jsonify({'message': 'User can not be a student'}), 400
-
-    data = request.get_json()
-
-    available_from = data.get('available_from')
-    available_until = data.get('available_until')
-    working_days = data.get('working_days')
-
-    if not available_from or not available_until or not working_days:
-        return jsonify({'message': 'Available dates or hours not provided'}), 400
-
-    try:
-        available_from = datetime.strptime(available_from, '%H:%M').time()
-        available_until = datetime.strptime(available_until, '%H:%M').time()
-    except ValueError:
-        return jsonify({'message': 'Available hours are not in %H:%M format'}), 400
-
-    try:
-        working_days = list(map(int, working_days))
-    except ValueError:
-        return jsonify(
-            {'message': 'Wrong type of working days, expected integers between 1 (Monday) and 7 (Sunday)'}), 400
-
-    if not all(0 < d < 8 for d in working_days):
-        return jsonify(
-            {'message': 'Wrong value of working days, expected integers between 1 (Monday) and 7 (Sunday)'}), 400
-
-    new_calendar = Calendar(
-        teacher_id=user.id,
-        available_from=available_from,
-        available_until=available_until,
-        working_days=working_days
-    )
-
-    db.session.add(new_calendar)
-    db.session.commit()
-
-    return jsonify({'message': 'Calendar created'}), 201
-
-
-@api.route('/calendar/<int:teacher_id>', methods=['GET'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_calendar.yml'))
-@jwt_required()
-def get_calendar(teacher_id):
-    user = get_user_by_jwt()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    calendar = Calendar.query.filter_by(teacher_id=teacher_id).first()
-
-    if not calendar:
-        return jsonify({'message': 'Calendar not found'}), 404
-
-    return jsonify(calendar.to_dict()), 200
-
-### End of calendars ###
-
-
-@api.route('/update-lesson-status', methods=['POST'])
-def update_lesson_status():
-    current_time = datetime.utcnow()
-    lessons_to_update = Lesson.query.filter(
-        Lesson.date < current_time,
-        Lesson.status == 'scheduled'
-    ).all()
-
-    for lesson in lessons_to_update:
-        lesson.status = 'completed'
-
-    db.session.commit()
-    return jsonify({'message': f'Updated {len(lessons_to_update)} lessons'}), 200
-
-
-def update_lesson_status_helper():
-    response = requests.post("http://localhost:5000/api/update-lesson-status")
