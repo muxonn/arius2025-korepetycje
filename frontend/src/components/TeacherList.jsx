@@ -80,9 +80,15 @@ const TeacherList = () => {
 const TeacherCard = ({ teacher }) => {
   const navigate = useNavigate();
   const [rating, setRating] = useState(0);
+  const [teacherAvailabilty, setTeacherAvailability] = useState({
+    available_from: '',
+    available_until: '',
+    working_days: ''
+  });
 
   useEffect(() => {
     fetchTeacherRating();
+    fetchTeacherCalendar();
   }, []);
 
   const fetchTeacherRating = async () => {
@@ -94,6 +100,19 @@ const TeacherCard = ({ teacher }) => {
       console.error('Failed to fetch teacher rating:', error);
     }
   };
+
+  const fetchTeacherCalendar = async () => {
+    try {
+      const data = await teachersAPI.getCalendar(teacher.id);
+      setTeacherAvailability({
+        available_from: data.available_from,
+        available_until: data.available_until,
+        working_days: data.working_days
+      })
+    } catch (error) {
+      console.error('Failed to fetch teacher calendar:', error);
+    }
+  }
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-300">
@@ -114,11 +133,19 @@ const TeacherCard = ({ teacher }) => {
         <div className="space-y-3 mb-6">
           <div className="flex items-center text-gray-600">
             <Book size={16} className="mr-2" />
-            <span className="text-sm">{Array.isArray(teacher.subjects) ? teacher.subjects.join(', ') : 'No subjects available'}</span>
+            <span className="text-sm">{teacher.subjects.replace(/{|}/g, '').split(',').join(', ')}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Award size={16} className="mr-2" />
-            <span className="text-sm">{Array.isArray(teacher.difficulty_levels) ? teacher.difficulty_levels.join(', ') : 'No levels available'}</span>
+            <span className="text-sm">{teacher.difficulty_levels.replace(/{|}/g, '').split(',').join(', ')}</span>
+          </div>
+          <div className="flex items-center text-gray-600">
+            <Calendar size={16} className="mr-2" />
+            <span className="text-sm">{teacherAvailabilty.available_from} - {teacherAvailabilty.available_until}</span>
+          </div>
+          <div className="flex items-center text-gray-600">
+            <Calendar size={16} className="mr-2" />
+            <span className="text-sm">{teacherAvailabilty.working_days}</span>
           </div>
         </div>
 
