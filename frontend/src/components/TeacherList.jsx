@@ -164,7 +164,7 @@ const TeacherCard = ({ teacher }) => {
             </div>
           </div>
           <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-            {teacher.hourly_rate} PLN/h
+            {teacher.hourly_rate} $/h
           </div>
         </div>
 
