@@ -344,6 +344,8 @@ def add_lesson():
     db.session.commit()
 
     email_service_url = "http://host.docker.internal:5001/send-email"
+
+    # Email the student
     email_payload = {
         "email_receiver": user.email,
         "subject": f"Lesson has been scheduled",
@@ -354,9 +356,23 @@ def add_lesson():
             "Best regards,\n"
             "Your Teaching Service Team"
         ),
-        }
+    }
+    requests.post(email_service_url, json=email_payload)
 
-    response = requests.post(email_service_url, json=email_payload)
+    # Email the teacher
+    email_payload = {
+        "email_receiver": teacher.email,
+        "subject": f"Lesson has been scheduled",
+        "body": (
+            f"Dear {teacher.name},\n\n"
+            f"Your lesson with {user.name} has been successfully scheduled.\n\n"
+            f"Date: {date.strftime('%Y-%m-%d')}"
+            "Best regards,\n"
+            "Your Teaching Service Team"
+        ),
+    }
+
+    requests.post(email_service_url, json=email_payload)
         
     return jsonify({'message': 'Lesson created'}), 201
 
@@ -755,4 +771,4 @@ def update_lesson_status():
 
 
 def update_lesson_status_helper():
-    response = requests.post("http://host.docker.internal:5000/api/update-lesson-status")
+    response = requests.post("http://localhost:5000/api/update-lesson-status")
