@@ -158,6 +158,7 @@ class Invoice(db.Model):
     price = db.Column(db.Float, nullable=False) 
     vat_rate = db.Column(db.Float, default=23.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
 
 class Subject(db.Model):
     __tablename__ = 'subjects'
