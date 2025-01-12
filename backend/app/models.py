@@ -91,6 +91,7 @@ class Lesson(db.Model):
             'price': self.price,
             'is_reviewed': self.is_reviewed,
             'is_reported': self.is_reported,
+            'difficulty_id' : self.difficulty_level_id,
         }
 
 class Calendar(db.Model):
