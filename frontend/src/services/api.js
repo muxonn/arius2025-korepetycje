@@ -114,7 +114,7 @@ export const teachersAPI = {
   addTeacherReview: (teacherId, review) =>
     fetchWithAuth(`/api/teacher-reviews/${teacherId}`, {
       method: 'POST',
-      body: JSON.stringify({ review })
+      body: JSON.stringify(review)
     }),
   
   deleteTeacherReview: (teacherId) =>
@@ -129,6 +129,12 @@ export const teachersAPI = {
     fetchWithAuth('/api/calendar', {
       method: 'POST',
       body: JSON.stringify(calendarData),
+    }),
+
+  updateTeacher: (formData) =>
+    fetchWithAuth('/teacher-update', {
+      method: 'PUT',
+      body: JSON.stringify(formData),
     }),
 };
 

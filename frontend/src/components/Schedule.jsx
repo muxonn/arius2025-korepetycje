@@ -15,7 +15,7 @@ const Schedule = () => {
   const { teacherId } = useParams();
   const [calendar, setCalendar] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [lessons, setLessons] = useState([]);
+  // const [lessons, setLessons] = useState([]);
   const [subject, setSubject] = useState('');
   const [filteredSubjects, setFilteredSubjects] = useState([]);
   const [difficulty, setDifficulty] = useState('');
@@ -38,20 +38,20 @@ const Schedule = () => {
       }
     };
 
-    const fetchTeacherLessons = async () => {
-      try {
-        const data = await teachersAPI.getTeacherLessons(teacherId);
-        setLessons(data.lesson_list);
-      } catch (error) {
-        console.error('Failed to fetch teacher lessons:', error);
-        setAlert({
-          type: 'error',
-          title: 'Error',
-          description: 'Failed to fetch teacher lessons. Please try again later.',
-          icon: <AlertCircle className="h-5 w-5 text-red-500" />
-        });
-      }
-    }
+    // const fetchTeacherLessons = async () => {
+    //   try {
+    //     const data = await teachersAPI.getTeacherLessons(teacherId);
+    //     setLessons(data.lesson_list);
+    //   } catch (error) {
+    //     console.error('Failed to fetch teacher lessons:', error);
+    //     setAlert({
+    //       type: 'error',
+    //       title: 'Error',
+    //       description: 'Failed to fetch teacher lessons. Please try again later.',
+    //       icon: <AlertCircle className="h-5 w-5 text-red-500" />
+    //     });
+    //   }
+    // }
 
     const getFilteredSubjects = () => {
       const cachedData = cache.get("teacherData");
@@ -78,7 +78,7 @@ const Schedule = () => {
     }
 
     fetchCalendar();
-    fetchTeacherLessons();
+    // fetchTeacherLessons();
     getFilteredSubjects();
     getFilteredDifficulties();
   }, [teacherId]);
@@ -114,7 +114,9 @@ const Schedule = () => {
   };
 
   const subtractOneHour = (date) => {
-    return date.setHours(date.getHours() - 1);
+    const newDate = new Date(date);
+    newDate.setHours(newDate.getHours() - 1);
+    return newDate;
   }
 
   const isAllowedDay = (date) => {
@@ -122,6 +124,21 @@ const Schedule = () => {
     const allowedDays = calendar.working_days.replace(/{|}/g, '').split(',').map(Number).map(num => num % 7);
     return allowedDays.includes(day);
   };
+
+  const isAllowedTime = (time) => {
+    const currentDate = new Date();
+    const selectedDate = new Date(time);
+    return currentDate.getTime() < selectedDate.getTime();
+    // for (const lesson of lessons) {
+    //   const lessonStart = new Date(lesson.date);
+    //   const lessonEnd = new Date(lessonStart);
+    //   lessonEnd.setHours(lessonStart.getHours() + 1);
+    //   if (selectedDate.getTime() >= lessonStart.getTime() && selectedDate.getTime() < lessonEnd.getTime()) {
+    //     return false;
+    //   }
+    // }
+    // return true;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -137,7 +154,7 @@ const Schedule = () => {
               {alert && (
                 <Alert className="mb-4 flex items-start space-x-3">
                   {alert.icon}
-                  <AlertTitle>{alert.title}</AlertTitle>
+                  <AlertTitle className="font-semibold">{alert.title}</AlertTitle>
                   <AlertDescription>{alert.description}</AlertDescription>
                 </Alert>
               )}
@@ -157,6 +174,7 @@ const Schedule = () => {
                       minDate={new Date()}
                       showTimeSelect
                       timeIntervals={60}
+                      filterTime={isAllowedTime}
                       minTime={subtractOneHour(util.getDateFromTimeString(calendar.available_from))}
                       maxTime={subtractOneHour(util.getDateFromTimeString(calendar.available_until))}
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg"

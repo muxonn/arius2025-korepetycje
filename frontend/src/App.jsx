@@ -6,6 +6,7 @@ import Login from './components/auth/Login'
 import TeacherList from './components/TeacherList';
 import Schedule from './components/Schedule';
 import LessonHistory from './components/LessonHistory';
+import Profile from './components/Profile';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -31,6 +32,15 @@ const NavBar = () => {
           
           {localStorage.getItem('token') ? (
             <div className="flex items-center space-x-6 flex-nowrap">
+              {localStorage.getItem('role') === 'teacher' ? (
+                <Link 
+                  to="/profile" 
+                  className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
+                >
+                  <User size={20} />
+                  <span>My Profile</span>
+                </Link>
+              ) : (<></>)}
               <Link 
                 to="/teachers" 
                 className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
@@ -155,6 +165,7 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
             <Route
               path="/teachers"
               element={

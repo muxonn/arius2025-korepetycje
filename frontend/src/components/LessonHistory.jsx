@@ -2,14 +2,14 @@
 import { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { API, invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
-import { Star, Clock, Book, FileText, AlertCircle, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
+import { Star, Clock, Book, AlertCircle, CheckCircle, MessageSquare, FilePlus2, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from "@/components/ui/label";
 import { cache } from '../utils/formatters';
 
 const LessonHistory = () => {
   const [lessons, setLessons] = useState([]);
   const [reports, setReports] = useState([]);
-  // const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     fetchLessons();
@@ -55,10 +55,10 @@ const LessonHistory = () => {
 };
 
 const LessonCard = ({ lesson, report, onLessonUpdated }) => {
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [showReportForm, setShowReportForm] = useState(false);
   const [teacher, setTeacher] = useState(null);
-  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
+  const [alert, setAlert] = useState(null);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const userRole = localStorage.getItem('role');
 
   useEffect(() => {
     // Pobierz dane nauczyciela na podstawie lesson.teacher_id
@@ -76,6 +76,57 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const renderActions = () => {
+    const actions = [];
+
+    // Only students can leave reviews
+    if (userRole === 'student' && lesson.status === 'completed') {
+      actions.push(
+        <ReviewForm 
+          teacherId={lesson.teacher_id}
+          onSubmit={() => onLessonUpdated()}
+        />
+      );
+    }
+
+    // Only teachers can add reports
+    if (userRole === 'teacher' && !lesson.is_reported) {
+      actions.push(
+        <ReportForm 
+          lessonId={lesson.id}
+          onSubmit={() => onLessonUpdated()}
+        />
+      );
+    }
+
+    // if (lesson.is_reported) {
+      actions.push(
+        <button
+          key="report"
+          onClick={() => setShowReportForm(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <FileText size={16} />
+          <span>Show Report</span>
+        </button>
+      )
+    // }
+
+    // Invoice generation available for all users
+    actions.push(
+      <button
+        key="invoice"
+        onClick={handleCreateInvoice}
+        className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+      >
+        <FilePlus2 size={16} />
+        <span>Generate Invoice</span>
+      </button>
+    );
+
+    return actions;
   };
 
   const handleCreateInvoice = async () => {
@@ -108,6 +159,7 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
           <div className="flex items-center space-x-8">
             <div>
               <h3 className="text-xl font-bold text-gray-900"><strong>Subject: </strong>{API.getSubjectNameById(lesson.subject)}</h3>
+              <strong>Lesson id: </strong>{lesson.id}
               <div className="flex items-center mt-1">
                 <Clock size={16} className="mr-2 text-gray-500" />
                 <span className="text-gray-600">
@@ -122,43 +174,19 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
             </div>
           </div>
           
-          {/* Middle section - Status */}
+          {/* Middle section - Status and Price */}
           <div className="flex items-center">
+            <div className="text-gray-700">
+              <strong>Price:</strong> ${lesson.price || teacher?.hourly_rate || 'N/A'}
+            </div>
             <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(lesson.status)}`}>
               {lesson.status.charAt(0).toUpperCase() + lesson.status.slice(1)}
             </span>
           </div>
 
-          {/* Right section - Actions and Price */}
+          {/* Right section - Actions */}
           <div className="flex items-center space-x-4 flex-nowrap overflow-x-auto">
-            <div className="text-gray-700">
-              <strong>Price:</strong> ${lesson.price || teacher?.hourly_rate || 'N/A'}
-            </div>
-            {lesson.status === 'completed' && !report && (
-            <button
-              onClick={() => setShowReportForm(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <FileText size={16} />
-              <span>Add Report</span>
-            </button>
-            )}
-            {lesson.status === 'completed' && !lesson.reviewed && (
-            <button
-              onClick={() => setShowReviewForm(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Star size={16} />
-              <span>Add Review</span>
-            </button>
-            )}
-            <button
-              onClick={handleCreateInvoice}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              <FilePlus2 size={16} />
-              <span>Generate Invoice</span>
-            </button>
+            {renderActions()}
           </div>
         </div>
 
@@ -186,37 +214,12 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
             </div>
           </div>
         )}
-
-        {(showReviewForm || showReportForm) && (
-        <div className="mt-4 border-t pt-4">
-          {showReviewForm && (
-          <ReviewForm 
-            teacherId={lesson.teacher_id}
-            onSubmit={() => {
-              setShowReviewForm(false);
-              onLessonUpdated();
-            }}
-            onCancel={() => setShowReviewForm(false)}
-          />
-          )}
-          {showReportForm && (
-          <ReportForm 
-            lessonId={lesson.id}
-            onSubmit={() => {
-              setShowReportForm(false);
-              onLessonUpdated();
-            }}
-            onCancel={() => setShowReportForm(false)}
-          />
-          )}
-        </div>
-        )}
       </CardContent>
     </Card>
   );
 };
 
-const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
+const ReviewForm = ({ teacherId, onSubmit }) => {
   const [formData, setFormData] = useState({
     rating: 5,
     comment: ''
@@ -227,6 +230,7 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
     e.preventDefault();
     try {
       await teachersAPI.addTeacherReview(teacherId, formData);
+      console.log(formData)
       onSubmit();
       setAlert({
         type: 'success',
@@ -236,6 +240,12 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
       });
     } catch (error) {
       console.error('Failed to submit review:', error);
+      setAlert({
+        type: 'error',
+        title: 'Error',
+        description: error.toLocaleString(),
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
+      })
     }
   };
 
@@ -250,21 +260,13 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
         </Alert>
       )}
       <h4 className="text-lg font-semibold text-gray-900 mb-4">Write a Review</h4>
-      <div>
-        <label className="block text-sm font-medium mb-2 text-gray-700">Rating</label>
-        <div className="flex items-center space-x-1">
-          {[5, 4, 3, 2, 1].map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFormData({...formData, rating: value})}
-              className={`p-1 ${formData.rating >= value ? 'text-yellow-400' : 'text-gray-300'}`}
-            >
-              <Star size={24} fill="currentColor" />
-            </button>
-          ))}
-        </div>
-      </div>
+      
+      <StarRating
+        value={formData.rating}
+        onChange={(value) => setFormData({...formData, rating: value})}
+        label="Rating"
+      />
+
       <div>
         <label className="block text-sm font-medium mb-2 text-gray-700">Comment</label>
         <textarea
@@ -277,13 +279,6 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
       </div>
       <div className="flex justify-end space-x-3">
         <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -294,7 +289,42 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
   );
 };
 
-const ReportForm = ({ lessonId, onSubmit, onCancel }) => {
+const StarRating = ({ value, onChange, label }) => {
+  const [hoverValue, setHoverValue] = useState(0);
+
+  return (
+    <div className="space-y-2">
+      {label && <Label>{label}</Label>}
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onMouseEnter={() => setHoverValue(star)}
+            onMouseLeave={() => setHoverValue(0)}
+            onClick={() => onChange(star)}
+            className="p-1 transition-colors duration-200 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <Star
+              size={24}
+              className={`
+                ${(hoverValue || value) >= star 
+                  ? 'fill-yellow-400 text-yellow-400' 
+                  : 'fill-gray-200 text-gray-200'}
+                transition-colors duration-200
+              `}
+            />
+          </button>
+        ))}
+        <span className="ml-2 text-sm text-gray-500">
+          {value ? `${value} star${value !== 1 ? 's' : ''}` : 'Rate'}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ReportForm = ({ lessonId, onSubmit }) => {
   const [formData, setFormData] = useState({
     progress_rating: 5,
     comment: '',
@@ -365,13 +395,6 @@ const ReportForm = ({ lessonId, onSubmit, onCancel }) => {
         />
       </div>
       <div className="flex justify-end space-x-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
