@@ -692,11 +692,11 @@ def get_report_by_lesson_id(lesson_id):
 
     report = LessonReport.query.filter_by(lesson_id=lesson_id).first()
 
-    if not (report.teacher_id == user.id or report.student_id == user.id):
-        return jsonify({'message': 'You are not authorized to view this report}'}), 400
-
     if not report:
         return jsonify({'message': 'No reports found'}), 400
+
+    if not (report.teacher_id == user.id or report.student_id == user.id):
+        return jsonify({'message': 'You are not authorized to view this report}'}), 400
 
     report_dict = {
         "student_name": Student.query.filter_by(id=report.student_id).first().name,
