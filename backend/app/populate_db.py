@@ -25,9 +25,11 @@ def populate_subjects():
             Subject(id=12, name="German"),
             Subject(id=13, name="Italian"),
         ]
-
-        db.session.add_all(subjects)
-        db.session.commit()
+        try:
+            db.session.add_all(subjects)
+            db.session.commit()
+        except Exception as e:
+            pass
         print(f"Dodano przedmioty do bazy danych.")
 
 
@@ -41,8 +43,11 @@ def populate_difficulty_levels():
             DifficultyLevel(id=5, name="Master's"),
         ]
 
-        db.session.add_all(difficulty_levels)
-        db.session.commit()
+        try:
+            db.session.add_all(difficulty_levels)
+            db.session.commit()
+        except Exception as e:
+            pass
         print(f"Dodano poziomy nauczania do bazy danych.")
 
 
