@@ -40,7 +40,7 @@ const Login = () => {
       setAlert({
         type: 'error',
         title: 'Error',
-        description: 'Failed to login. Please try again later.',
+        description: error.toLocaleString(),
         icon: <AlertCircle className="h-5 w-5 text-red-500" />
       })
     }
