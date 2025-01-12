@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { API, invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
-import { Star, Clock, Book, AlertCircle, CheckCircle, MessageSquare, FilePlus2, FileText } from 'lucide-react';
+import { Star, Clock, Book, AlertCircle, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from "@/components/ui/label";
 import { cache } from '../utils/formatters';
@@ -57,7 +57,6 @@ const LessonHistory = () => {
 const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   const [teacher, setTeacher] = useState(null);
   const [alert, setAlert] = useState(null);
-  const [showReportForm, setShowReportForm] = useState(false);
   const userRole = localStorage.getItem('role');
 
   useEffect(() => {
@@ -100,19 +99,6 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
         />
       );
     }
-
-    // if (lesson.is_reported) {
-      actions.push(
-        <button
-          key="report"
-          onClick={() => setShowReportForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <FileText size={16} />
-          <span>Show Report</span>
-        </button>
-      )
-    // }
 
     // Invoice generation available for all users
     actions.push(
@@ -213,6 +199,9 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
               )}
             </div>
           </div>
+        )}
+        {!report && (
+          <div>No report for this lesson yet.</div>
         )}
       </CardContent>
     </Card>
