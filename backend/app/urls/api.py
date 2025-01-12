@@ -62,7 +62,7 @@ def get_teacher_list():
         return jsonify({'message': 'User not found'}), 401
 
     if subject and difficulty_id:
-        teachers = Teacher.query.filter(Teacher.subjects.match(subject),
+        teachers = Teacher.query.filter(Teacher.subject_ids.match(subject),
                                         Teacher.difficulty_level_ids.match(difficulty_id)).all()
     elif subject:
         teachers = Teacher.query.filter(Teacher.subject_ids.match(subject)).all()
