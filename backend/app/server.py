@@ -5,12 +5,14 @@ from models import db
 from urls.auth import auth
 from urls.api import api, update_lesson_status_helper
 from config import Config
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
 from sqlalchemy.exc import OperationalError
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
+CORS(app)
 
 try:
     # Load app config
