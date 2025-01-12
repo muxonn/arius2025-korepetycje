@@ -446,41 +446,6 @@ def get_lesson_by_id(teacher_id):
 BASE_DIR = os.path.join(os.path.dirname(__file__), "../static_invoices")
 BASE_DIR = os.path.abspath(BASE_DIR) 
 
-@api.route('/invoice', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
-@jwt_required()
-def add_invoice():
-    user = get_user_by_jwt()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    if user.role != 'student':
-        return jsonify({'message': 'User can not be a teacher'}), 400
-
-    data = request.get_json()
-
-    lesson_id = data.get('lesson_id')
-
-    lesson = Lesson.query.filter_by(id=lesson_id).first()
-    if not lesson:
-        return jsonify({'message': 'Lesson not found'}), 400
-
-    invoice = Invoice.query.filter_by(lesson_id=lesson_id).first()
-
-    if invoice:
-        return jsonify({'message': 'Lesson already invoiced'}), 400
-
-    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
-
-    db.session.add(new_invoice)
-    db.session.commit()
-
-    return jsonify({'message': 'Invoice created'}), 201
-
-
-# Necassary endpoint used by the email service, not
-# meant to be used by external programs/services
 @api.route('/generated-invoice-pdf/<filename>', methods=['GET'])
 def get_pdf(filename):
     try:
@@ -490,8 +455,6 @@ def get_pdf(filename):
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static_invoices"))
 
-@api.route('/generate-and-send-invoice/<int:invoice_id>', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'generate_and_send_invoice.yml'))
 def generate_and_send_invoice(invoice_id):
     try:
         # Pobranie danych z bazy danych
@@ -566,6 +529,45 @@ def generate_and_send_invoice(invoice_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api.route('/invoice', methods=['POST'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
+@jwt_required()
+def add_invoice():
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    if user.role != 'student':
+        return jsonify({'message': 'User can not be a teacher'}), 400
+
+    data = request.get_json()
+
+    lesson_id = data.get('lesson_id')
+
+    lesson = Lesson.query.filter_by(id=lesson_id).first()
+    if not lesson:
+        return jsonify({'message': 'Lesson not found'}), 400
+
+    invoice = Invoice.query.filter_by(lesson_id=lesson_id).first()
+
+    if invoice:
+        return jsonify({'message': 'Lesson already invoiced'}), 400
+
+    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
+
+    db.session.add(new_invoice)
+    db.session.commit()
+
+    generate_and_send_invoice(new_invoice.id)
+
+    return jsonify({'message': 'Invoice created'}), 201
+
+
+# Necassary endpoint used by the email service, not
+# meant to be used by external programs/services
+
 
 ### End of invoices ###
 
