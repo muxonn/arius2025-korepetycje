@@ -199,8 +199,7 @@ def add_review(teacher_id):
     if rating < 0 or rating > 5:
         return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
 
-    last_review = Review.query.filter_by(teacher_id=teacher_id, student_id=user.id)
-
+    last_review = Review.query.filter_by(teacher_id=teacher_id, student_id=user.id).first()
     if last_review:
         return jsonify({'message': 'Rating for this teacher is already created'}), 400
 
@@ -212,7 +211,7 @@ def add_review(teacher_id):
     if not comment:
         comment = ""
 
-    return jsonify({"rating": rating, "comment": comment}), 200
+    return jsonify({"message": "Review created successfully."}), 200
 
 
 @api.route('/teacher-reviews/<int:teacher_id>', methods=['DELETE'])
