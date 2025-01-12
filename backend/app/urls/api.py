@@ -680,6 +680,36 @@ def get_report():
     return jsonify({'report_list': report_list}), 200
 
 
+@api.route('/report/<int:lesson_id>', methods=['GET'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report.yml'))
+@jwt_required()
+def get_report_by_lesson_id(lesson_id):
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    report = LessonReport.query.filter_by(lesson_id=lesson_id).first()
+
+    if not (report.teacher_id == user.id or report.student_id == user.id):
+        return jsonify({'message': 'You are not authorized to view this report}'}), 400
+
+    if not report:
+        return jsonify({'message': 'No reports found'}), 400
+
+    report_dict = {
+        "student_name": Student.query.filter_by(id=report.student_id).first().name,
+         "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
+         "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
+         "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
+         "homework": report.homework,
+         "progress_rating": report.progress_rating,
+         "comment": report.comment,
+    }
+
+    return jsonify({'report': report_dict}), 200
+
+
 ### End of reports ###
 
 

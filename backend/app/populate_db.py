@@ -196,13 +196,13 @@ def populate_calendars(num):
 
 if __name__ == "__main__":
     num_records = 10
-    populate_difficulty_levels()
-    populate_subjects()
-    populate_teachers(num_records)
-    populate_students(num_records)
-    populate_lessons(num_records)
-    populate_reviews(num_records)
-    populate_invoices(num_records)
+    # populate_difficulty_levels()
+    # populate_subjects()
+    # populate_teachers(num_records)
+    # populate_students(num_records)
+    # populate_lessons(num_records)
+    # populate_reviews(num_records)
+    # populate_invoices(num_records)
     populate_reports(num_records)
     populate_calendars(num_records)
 
