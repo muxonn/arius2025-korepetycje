@@ -31,3 +31,25 @@ def test_login(test_client):
     })
     assert response.status_code == 200
     assert 'access_token' in response.json
+
+
+def test_register_duplicate_email(test_client, setup_users):
+    response = test_client.post('/auth/register', json={
+        'name': 'Duplicate User',
+        'email': 'student@example.com',  # Already exists
+        'password': 'password123',
+        'role': 'student'
+    })
+    assert response.status_code == 400
+    assert response.json['message'] == 'Email already in use.'
+
+
+def test_login_invalid_credentials(test_client):
+    response = test_client.post('/auth/login', json={
+        'email': 'nonexistent@example.com',
+        'password': 'wrongpassword'
+    })
+    assert response.status_code == 401
+    assert response.json['message'] == 'Invalid email or password.'
+
+

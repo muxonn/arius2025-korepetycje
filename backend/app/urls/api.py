@@ -24,10 +24,10 @@ api = Blueprint('api', __name__)
 
 def get_user_by_jwt():
     user_id = get_jwt_identity()
-    user = Teacher.query.get(user_id)
+    user = Teacher.query.filter_by(id=user_id).first()
 
     if not user:
-        user = Student.query.get(user_id)
+        user = Student.query.filter_by(id=user_id).first()
 
     return user
 
@@ -101,7 +101,7 @@ def update_teacher():
 
     try:
         if subject_ids:
-            if all(Subject.query.get(int(s)) for s in subject_ids):
+            if all(Subject.query.filter_by(id=int(s)).first() for s in subject_ids):
                 db.session.query(Teacher).filter_by(id=user.id).update({'subject_ids': subject_ids})
             else:
                 return jsonify({'message': 'Subject not found'}), 404
@@ -110,7 +110,7 @@ def update_teacher():
 
     try:
         if difficulty_level_ids:
-            if all(DifficultyLevel.query.get(int(s)) for s in difficulty_level_ids):
+            if all(DifficultyLevel.query.filter_by(id=int(s)).first() for s in difficulty_level_ids):
                 db.session.query(Teacher).filter_by(id=user.id).update({'difficulty_level_ids': difficulty_level_ids})
             else:
                 return jsonify({'message': 'Difficulty level not found'}), 404
@@ -198,10 +198,6 @@ def add_review(teacher_id):
     if rating < 0 or rating > 5:
         return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
 
-    last_review = Review.query.filter_by(teacher_id=teacher_id, student_id=user.id)
-
-    if last_review:
-        return jsonify({'message': 'Rating for this teacher is already created'}), 400
 
     new_review = Review(teacher_id=teacher_id, student_id=user.id, rating=rating, comment=comment)
 
@@ -267,7 +263,7 @@ def add_lesson():
     except ValueError:
         return jsonify({'message': 'Subject id must be an integer'}), 400
 
-    subject = Subject.query.get(subject_id)
+    subject = Subject.query.filter_by(id=subject_id).first()
 
     if not subject:
         return jsonify({'message': 'Subject not found'}), 404
@@ -280,7 +276,7 @@ def add_lesson():
     except ValueError:
         return jsonify({'message': 'Difficulty level id must be an integer'}), 400
 
-    difficulty_level = Subject.query.get(difficulty_level_id)
+    difficulty_level = Subject.query.filter_by(id=difficulty_level_id).first()
 
     if not difficulty_level:
         return jsonify({'message': 'Difficulty level not found'}), 404

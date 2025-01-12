@@ -51,7 +51,7 @@ def register():
 
         try:
             if subject_ids:
-                if not all(Subject.query.get(int(s)) for s in subject_ids):
+                if not all(Subject.query.filter_by(id=int(s)).first() for s in subject_ids):
                     return jsonify({'message': 'Subject not found'}), 404
             else:
                 return jsonify({"message": "Subjects are required."}), 400
@@ -60,7 +60,7 @@ def register():
 
         try:
             if difficulty_level_ids:
-                if not all(DifficultyLevel.query.get(int(s)) for s in difficulty_level_ids):
+                if not all(DifficultyLevel.query.filter_by(id=int(s)).first() for s in difficulty_level_ids):
                     return jsonify({'message': 'Difficulty level not found'}), 404
             else:
                 return jsonify({"message": "Difficulty levels are required."}), 400

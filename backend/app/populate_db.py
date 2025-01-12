@@ -10,45 +10,43 @@ fake = Faker()
 
 def populate_subjects():
     with app.app_context():
-        subjects = [
-            Subject(id=1, name="Maths"),
-            Subject(id=2, name="Physics"),
-            Subject(id=3, name="Biology"),
-            Subject(id=4, name="Chemistry"),
-            Subject(id=5, name="Geography"),
-            Subject(id=6, name="Science"),
-            Subject(id=7, name="IT"),
-            Subject(id=8, name="English"),
-            Subject(id=9, name="Polish"),
-            Subject(id=10, name="Spanish"),
-            Subject(id=11, name="French"),
-            Subject(id=12, name="German"),
-            Subject(id=13, name="Italian"),
-        ]
-        try:
+        if not Subject.query.filter_by(id=1).first():
+            subjects = [
+                Subject(id=1, name="Maths"),
+                Subject(id=2, name="Physics"),
+                Subject(id=3, name="Biology"),
+                Subject(id=4, name="Chemistry"),
+                Subject(id=5, name="Geography"),
+                Subject(id=6, name="Science"),
+                Subject(id=7, name="IT"),
+                Subject(id=8, name="English"),
+                Subject(id=9, name="Polish"),
+                Subject(id=10, name="Spanish"),
+                Subject(id=11, name="French"),
+                Subject(id=12, name="German"),
+                Subject(id=13, name="Italian"),
+            ]
             db.session.add_all(subjects)
             db.session.commit()
-        except Exception as e:
-            pass
-        print(f"Dodano przedmioty do bazy danych.")
+            print(f"Dodano przedmioty do bazy danych.")
 
 
 def populate_difficulty_levels():
     with app.app_context():
-        difficulty_levels = [
-            DifficultyLevel(id=1, name="Primary School"),
-            DifficultyLevel(id=2, name="Lower Secondary School"),
-            DifficultyLevel(id=3, name="Higher Secondary School"),
-            DifficultyLevel(id=4, name="Bachelor's"),
-            DifficultyLevel(id=5, name="Master's"),
-        ]
+        if not DifficultyLevel.query.filter_by(id=1).first():
+            difficulty_levels = [
+                DifficultyLevel(id=1, name="Primary School"),
+                DifficultyLevel(id=2, name="Lower Secondary School"),
+                DifficultyLevel(id=3, name="Higher Secondary School"),
+                DifficultyLevel(id=4, name="Bachelor's"),
+                DifficultyLevel(id=5, name="Master's"),
+            ]
 
-        try:
+
             db.session.add_all(difficulty_levels)
             db.session.commit()
-        except Exception as e:
-            pass
-        print(f"Dodano poziomy nauczania do bazy danych.")
+
+            print(f"Dodano poziomy nauczania do bazy danych.")
 
 
 def populate_teachers(num):
@@ -207,7 +205,7 @@ if __name__ == "__main__":
     populate_students(num_records)
     populate_lessons(num_records)
     populate_reviews(num_records)
-    populate_invoices(num_records)
+    # populate_invoices(num_records)
     populate_reports(num_records)
     populate_calendars(num_records)
 
