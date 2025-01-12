@@ -1,7 +1,7 @@
 tags:
   - Authentication
 summary: Login a user
-description: Authenticates a user and returns a JWT access token.
+description: Authenticates a user and returns a JWT access token. Validates input fields, including email format.
 operationId: login
 parameters:
   - name: body
@@ -16,12 +16,6 @@ parameters:
         password:
           type: string
           example: "password123"
-        role:
-          type: string
-          enum:
-            - student
-            - teacher
-          example: "student"
 responses:
   200:
     description: Login successful.
@@ -34,6 +28,9 @@ responses:
         access_token:
           type: string
           example: "eyJhbGciOiJIUzI1NiIsInR..."
+        role:
+          type: string
+          example: "student"
   400:
     description: Missing fields or validation errors.
     schema:
@@ -41,7 +38,9 @@ responses:
       properties:
         message:
           type: string
-          example: "Email, password and role are required."
+          example: >
+            - "Email, password are required."
+            - "Invalid email format."
   401:
     description: Invalid credentials.
     schema:
@@ -52,3 +51,9 @@ responses:
           example: "Invalid email or password."
   500:
     description: Internal server error.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "An unexpected error occurred. Please try again later."
