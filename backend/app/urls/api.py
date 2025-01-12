@@ -58,11 +58,11 @@ def get_teacher_list():
 
     if subject and difficulty_id:
         teachers = Teacher.query.filter(Teacher.subjects.match(subject),
-                                        Teacher.difficulty_levels.match(difficulty_id)).all()
+                                        Teacher.difficulty_level_ids.match(difficulty_id)).all()
     elif subject:
-        teachers = Teacher.query.filter(Teacher.subjects.match(subject)).all()
+        teachers = Teacher.query.filter(Teacher.subject_ids.match(subject)).all()
     elif difficulty_id:
-        teachers = Teacher.query.filter(Teacher.difficulty_levels.match(difficulty_id)).all()
+        teachers = Teacher.query.filter(Teacher.difficulty_level_ids.match(difficulty_id)).all()
     else:
         teachers = Teacher.query.all()
 
