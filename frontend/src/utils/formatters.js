@@ -1,5 +1,15 @@
 import { API } from "../services/api";
 
+export const cache = {
+  save: (key, data) => 
+    localStorage.setItem(key, JSON.stringify(data)),
+
+  get: (key) => {
+    const storedData = localStorage.getItem(key);
+    return storedData ? JSON.parse(storedData) : null;
+  }
+}
+
 export const util = {
   getSubjectNamesFromIdString: (subjectIdsString) => {
     const subjectIds = subjectIdsString.replace(/{|}/g, "").split(",").map(Number).sort(); // Usuwa klamry { } i dzieli na tablice

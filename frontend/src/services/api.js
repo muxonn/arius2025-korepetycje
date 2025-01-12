@@ -99,7 +99,7 @@ export const teachersAPI = {
   getTeacherList: ({ subject = null, difficulty = null}) => {
     const query = new URLSearchParams();
     if (subject) query.append('subject', subject);
-    if (difficulty) query.append('difficulty', difficulty);
+    if (difficulty) query.append('difficulty_id', difficulty);
     return fetchWithAuth(`/api/teacher-list?${query.toString()}`);
   },
 

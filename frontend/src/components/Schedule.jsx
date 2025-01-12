@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import { format, getDay, setHours, setMinutes } from 'date-fns';
+import { format, getDay } from 'date-fns';
 import { pl } from 'date-fns/locale/pl';
 import "react-datepicker/dist/react-datepicker.css";
-import { Calendar, BookOpen, AlertCircle, CheckCircle, Space } from 'lucide-react';
+import { Calendar, BookOpen, AlertCircle, CheckCircle, Space, Award } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { lessonsAPI, teachersAPI } from '../services/api';
-import { util } from '../utils/formatters';
+import { API, lessonsAPI, teachersAPI } from '../services/api';
+import { cache, util } from '../utils/formatters';
 registerLocale('pl', pl)
 
 const Schedule = () => {
   const { teacherId } = useParams();
   const [calendar, setCalendar] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [excludedTimes, setExcludedTimes] = useState(null);
-  const [lessons, setLessons] = useState(null);
+  const [lessons, setLessons] = useState([]);
   const [subject, setSubject] = useState('');
+  const [filteredSubjects, setFilteredSubjects] = useState([]);
+  const [difficulty, setDifficulty] = useState('');
+  const [filteredDifficulties, setFilteredDifficulties] = useState([]);
   const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   useEffect(() => {
@@ -51,19 +53,48 @@ const Schedule = () => {
       }
     }
 
+    const getFilteredSubjects = () => {
+      const cachedData = cache.get("teacherData");
+      if (!cachedData) console.error("No data in cache!");
+      console.log(cachedData)
+      const teacher = cachedData.find((t) => t.id === parseInt(teacherId, 10));
+      if (teacher && teacher.subjects) {
+        const subjects = util.getSubjectNamesFromIdString(teacher.subjects);
+        setFilteredSubjects(subjects);
+      } else {
+        setFilteredSubjects([]);
+      }
+    }
+
+    const getFilteredDifficulties = () => {
+      const cachedData = cache.get("teacherData");
+      if (!cachedData) console.error("No data in cache!");
+      console.log(cachedData)
+      const teacher = cachedData.find((t) => t.id === parseInt(teacherId, 10));
+      if (teacher && teacher.difficulty_levels) {
+        const difficulties = util.getDifficultyNamesFromIdString(teacher.difficulty_levels);
+        setFilteredDifficulties(difficulties);
+      } else {
+        setFilteredDifficulties([]);
+      }
+    }
+
     fetchCalendar();
     fetchTeacherLessons();
-    excludeTeacherTimes();
+    getFilteredSubjects();
+    getFilteredDifficulties();
   }, [teacherId]);
 
   const handleScheduleLesson = async () => {
-    if (!selectedDate || !subject) return;
+    if (!selectedDate || !subject || !difficulty) return;
 
     try {
       const dateTime = format(selectedDate, 'dd/MM/yyyy HH:mm');
+      console.log(difficulty)
       await lessonsAPI.scheduleLesson({
         teacher_id: teacherId,
-        subject,
+        subject_id: subject,
+        difficulty_id: difficulty,
         date: dateTime
       });
       
@@ -82,33 +113,6 @@ const Schedule = () => {
         icon: <AlertCircle className="h-5 w-5 text-red-500" />
       });
     }
-  };
-
-  const excludeTeacherTimes = () => {
-    if (!calendar) return [];
-    
-    const allSlots = [];
-    let current = setHours(setMinutes(new Date(), 0), 0);
-    const EOD = setHours(setMinutes(new Date(), 59), 23);
-
-    // Generowanie wszystkich slotow godzinnych w ciagu doby
-    while (current <= EOD) {
-      allSlots.push(current);
-      current.setHours(current.getHours() + 1);
-    }
-
-    // Sloty poza godzinami dostepnosci
-    const unavailableSlots = [];
-    const start = util.getDateFromTimeString(calendar.available_from);
-    const end = util.getDateFromTimeString(calendar.available_until);
-    
-    allSlots.forEach(slot => {
-      if (slot < start || slot >= end) {
-        unavailableSlots.push(slot);
-      }
-    });
-    
-    setExcludedTimes(unavailableSlots);
   };
 
   const subtractOneHour = (date) => {
@@ -133,7 +137,7 @@ const Schedule = () => {
             <div className="space-y-6">
               {/* Jeśli alert istnieje, wyświetl go */}
               {alert && (
-                <Alert variant="destructive" className="mb-4 flex items-start space-x-3">
+                <Alert className="mb-4 flex items-start space-x-3">
                   {alert.icon}
                   <AlertTitle>{alert.title}</AlertTitle>
                   <AlertDescription>{alert.description}</AlertDescription>
@@ -152,6 +156,7 @@ const Schedule = () => {
                       selected={selectedDate}
                       onChange={e => setSelectedDate(e)}
                       filterDate={isAllowedDay}
+                      minDate={new Date()}
                       showTimeSelect
                       timeIntervals={60}
                       minTime={subtractOneHour(util.getDateFromTimeString(calendar.available_from))}
@@ -162,6 +167,7 @@ const Schedule = () => {
                 </div>
                 }
 
+                {filteredSubjects && 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2 text-gray-700">Subject</label>
                   <div className="relative">
@@ -169,21 +175,49 @@ const Schedule = () => {
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white mt-4"
                     >
-                      <option value="" disabled>
+                      <option value="" disabled selected hidden>
                         Select a subject...
                       </option>
-                      {}
+                      {filteredSubjects.map((subject) => (
+                        <option key={subject} value={API.getSubjectIdByName(subject)}>
+                          {subject}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
+                }
+
+                {filteredDifficulties && 
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2 text-gray-700">Difficulty Level</label>
+                  <div className="relative">
+                    <Award className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <select
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white mt-4"
+                    >
+                      <option value="" disabled selected hidden>
+                        Select a difficulty level...
+                      </option>
+                      {filteredDifficulties.map((difficulty) => (
+                        <option key={difficulty} value={API.getDifficultyIdByName(difficulty)}>
+                          {difficulty}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                }
 
                 <div className="flex justify-end space-x-3">
                   <button
                     onClick={handleScheduleLesson}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    disabled={!selectedDate || !subject}
+                    disabled={!selectedDate || !subject || !difficulty}
                   >
                     Schedule Lesson
                   </button>

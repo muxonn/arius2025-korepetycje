@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { teachersAPI } from '../services/api';
 import { Star, Calendar, Book, Award } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { util } from '../utils/formatters';
+import { cache, util } from '../utils/formatters';
 
 const TeacherList = () => {
   const [teachers, setTeachers] = useState([]);
@@ -12,18 +12,61 @@ const TeacherList = () => {
     subject: '',
     difficulty: ''
   });
-
-  const fetchTeachers = async () => {
-    try {
-      const data = await teachersAPI.getTeacherList(filters);
-      setTeachers(data.teacher_list);
-    } catch (error) {
-      console.error('Failed to fetch teachers:', error);
-    }
-  };
+  const [subjects, setSubjects] = useState([]);
+  const [difficulties, setDifficulties] = useState([]);
 
   useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const cachedData = cache.get("teacherData");
+        if (cachedData) {
+          console.log("Using cached data");
+          setTeachers(cachedData);
+        } else {
+          console.log("Fetching data from API");
+          const data = await teachersAPI.getTeacherList();
+          setTeachers(data.teacher_list);
+          cache.save("teacherData", data.teacher_list);
+        }
+      } catch (error) {
+        console.error('Failed to fetch teachers:', error);
+      }
+    };
     fetchTeachers();
+
+    const subjects = [];
+    const difficulties = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("subject_")) {
+        subjects.push({ 
+          key: key.replace("subject_", ""), 
+          label: localStorage.getItem(key) 
+        });
+      } else if (key.startsWith("difficulty_")) {
+        difficulties.push({ 
+          key: key.replace("difficulty_", ""), 
+          label: localStorage.getItem(key) 
+        });
+      }
+    }
+    subjects.sort((a, b) => Number(a.key) - Number(b.key));
+    difficulties.sort((a, b) => Number(a.key) - Number(b.key));
+    setSubjects(subjects);
+    setDifficulties(difficulties);
+  }, []);
+
+  useEffect(() => {
+    const filterTeachers = async () => {
+      try {
+        const data = await teachersAPI.getTeacherList(filters);
+        setTeachers(data.teacher_list);
+      } catch (error) {
+        console.error('Failed to fetch teachers:', error);
+      }
+    }
+
+    filterTeachers();
   }, [filters]);
 
   return (
@@ -39,13 +82,18 @@ const TeacherList = () => {
                 <label className="block text-sm font-medium mb-2 text-gray-700">Subject</label>
                 <div className="relative">
                   <Book className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
+                  <select
                     value={filters.subject}
                     onChange={(e) => setFilters({...filters, subject: e.target.value})}
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter subject..."
-                  />
+                  >
+                    <option value="">All Subjects</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.key} value={subject.key}>
+                        {subject.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -58,9 +106,11 @@ const TeacherList = () => {
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                   >
                     <option value="">All Levels</option>
-                    <option value="elementary">Elementary School</option>
-                    <option value="middle">Middle School</option>
-                    <option value="high">High School</option>
+                    {difficulties.map((level) => (
+                      <option key={level.key} value={level.key}>
+                        {level.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
