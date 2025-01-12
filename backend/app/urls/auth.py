@@ -3,8 +3,14 @@ from models import db, Student, Teacher  # Importuj odpowiednie modele
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token
 from flasgger import swag_from
+import re
 
 auth = Blueprint('auth', __name__)
+
+def is_valid_email(email: str) -> bool:
+    # Regex for an email expression
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(email_regex, email) is not None
 
 # Registration Endpoint
 @auth.route('/register', methods=['POST'])
@@ -19,6 +25,9 @@ def register():
 
     if not name or not email or not password or not role:
         return jsonify({"message": "Name, email, password, and role are required."}), 400
+    
+    if not is_valid_email(email):
+        return jsonify({"message": "Invalid email format."}), 400
 
     if role not in ['student', 'teacher']:
         return jsonify({"message": "Role must be either 'student' or 'teacher'."}), 400
@@ -69,6 +78,9 @@ def login():
 
     if not email or not password:
         return jsonify({"message": "Email, password are required."}), 400
+    
+    if not is_valid_email(email):
+        return jsonify({"message": "Invalid email format."}), 400
 
     # Find the user by email in both Student and Teacher tables
 
