@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, UserPlus, BookOpen, User, AlertCircle } from 'lucide-react';
+import Select from 'react-select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { authAPI } from '../../services/api';
+import { authAPI, API } from '../../services/api';
+import { cache } from '../../utils/formatters';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -12,15 +14,60 @@ const Register = () => {
     email: '',
     password: '',
     role: 'student',
-    subjects: '',
-    difficulty_levels: ''
+    subjects: [],
+    difficulty_levels: []
   });
-  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
+  
+  const [alert, setAlert] = useState(null);
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [difficultyOptions, setDifficultyOptions] = useState([]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        let subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
+        let difficulties = JSON.parse(localStorage.getItem('difficultyLevels') || '[]');
+
+        if (subjects.length === 0 || difficulties.length === 0) {
+          // Jeśli brak danych w cache, pobierz je z API
+          if (subjects.length === 0) {
+            subjects = await API.setSubjects();
+            }
+          if (difficulties.length === 0) {
+            difficulties = await API.setDifficultyLevels();
+          }
+        }
+        // Cache the options
+        cache.save('subjects', subjects);
+        cache.save('difficultyLevels', difficulties);
+
+        setSubjectOptions(subjects);
+        setDifficultyOptions(difficulties);
+      } catch (error) {
+        console.error('Failed to load options:', error);
+        setAlert({
+          type: 'error',
+          title: 'Error',
+          description: 'Failed to load subjects and difficulty levels.',
+          icon: <AlertCircle className="h-5 w-5 text-red-500" />
+        });
+      }
+    };
+
+    loadOptions();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await authAPI.register(formData);
+      // Transform selected options back to the format expected by the API
+      const transformedData = {
+        ...formData,
+        subject_ids: formData.subjects.map(s => s.id).join(','),
+        difficulty_level_ids: formData.difficulty_levels.map(d => d.id).join(',')
+      };
+      
+      await authAPI.register(transformedData);
       navigate('/login');
     } catch (error) {
       console.error('Failed to register:', error);
@@ -110,28 +157,32 @@ const Register = () => {
             {formData.role === 'teacher' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Subjects (comma-separated)</label>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">Subjects</label>
                   <div className="relative">
-                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="text"
+                    <BookOpen className="absolute left-3 top-3 text-gray-400 z-10" size={20} />
+                    <Select
+                      isMulti
+                      options={subjectOptions}
                       value={formData.subjects}
-                      onChange={(e) => setFormData({...formData, subjects: e.target.value})}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Math, Physics, Chemistry"
+                      onChange={(selected) => setFormData({...formData, subjects: selected || []})}
+                      className="pl-8"
+                      classNamePrefix="select"
+                      placeholder="Select subjects..."
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">Difficulty Levels</label>
                   <div className="relative">
-                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="text"
+                    <BookOpen className="absolute left-3 top-3 text-gray-400 z-10" size={20} />
+                    <Select
+                      isMulti
+                      options={difficultyOptions}
                       value={formData.difficulty_levels}
-                      onChange={(e) => setFormData({...formData, difficulty_levels: e.target.value})}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Elementary, Middle School, High School"
+                      onChange={(selected) => setFormData({...formData, difficulty_levels: selected || []})}
+                      className="pl-8"
+                      classNamePrefix="select"
+                      placeholder="Select difficulty levels..."
                     />
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 const API_URL = 'http://localhost:5000';
 
-// Funkcja pomocnicza do obsługi zapytań
+// Pomocnicza funkcja do obsługi zapytań
 const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('token');
   const headers = {
@@ -29,53 +29,52 @@ export const API = {
       const error = await response.json();
       throw new Error(error.message || 'API request failed');
     }
-    response.json().then(data => {
-      data.subjects.forEach(subject => {
-        localStorage.setItem(`subject_${subject.id}`, subject.name);
-      });
-    });
+    const data = await response.json();
+    const formattedSubjects = data.subjects.map(subject => ({
+      id: subject.id,
+      name: subject.name
+    }));
+    localStorage.setItem('subjects', JSON.stringify(formattedSubjects));
+    return formattedSubjects;
   },
+
   setDifficultyLevels: async () => {
     const response = await fetch(`${API_URL}/api/difficulty-levels`);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'API request failed');
     }
-    response.json().then(data => {
-      data.difficulty_levels.forEach(difficulty => {
-        localStorage.setItem(`difficulty_${difficulty.id}`, difficulty.name);
-      });
-    });
+    const data = await response.json();
+    const formattedLevels = data.difficulty_levels.map(level => ({
+      id: level.id,
+      name: level.name
+    }));
+    localStorage.setItem('difficultyLevels', JSON.stringify(formattedLevels));
+    return formattedLevels;
   },
+
   getSubjectNameById: (id) => {
-    return localStorage.getItem(`subject_${id}`);
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
+    const subject = subjects.find(s => s.id === id);
+    return subject ? subject.name : null;
   },
+
   getSubjectIdByName: (name) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith("subject_")) {
-        const storedName = localStorage.getItem(key);
-        if (storedName === name) {
-          return parseInt(key.split("_")[1], 10);
-        }
-      }
-    }
-    return null;
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
+    const subject = subjects.find(s => s.name === name);
+    return subject ? subject.id : null;
   },
+
   getDifficultyNameById: (id) => {
-    return localStorage.getItem(`difficulty_${id}`);
+    const levels = JSON.parse(localStorage.getItem('difficultyLevels') || '[]');
+    const level = levels.find(l => l.id === id);
+    return level ? level.name : null;
   },
+
   getDifficultyIdByName: (name) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith("difficulty_")) {
-        const storedName = localStorage.getItem(key);
-        if (storedName === name) {
-          return parseInt(key.split("_")[1], 10);
-        }
-      }
-    }
-    return null;
+    const levels = JSON.parse(localStorage.getItem('difficultyLevels') || '[]');
+    const level = levels.find(l => l.name === name);
+    return level ? level.id : null;
   },
 }
 

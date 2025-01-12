@@ -4,6 +4,7 @@ import { Mail, Lock, User, ChevronRight, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { API, authAPI } from '../../services/api';
+import { cache } from '../../utils/formatters';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,8 +20,20 @@ const Login = () => {
     try {
       const data = await authAPI.login(formData);
       localStorage.setItem('token', data.access_token);
-      API.setSubjects();
-      API.setDifficultyLevels();
+      let subjects = cache.get("subjects");
+      let difficulties = cache.get("difficulties");
+      if (!subjects || !difficulties) {
+        // Jeśli brak danych w cache, pobierz je z API
+        if (!subjects) {
+          subjects = await API.setSubjects();
+          }
+        if (!difficulties) {
+          difficulties = await API.setDifficultyLevels();
+        }
+      }
+      // Cache the options
+      cache.save('subjects', subjects);
+      cache.save('difficultyLevels', difficulties);
       navigate('/');
     } catch (error) {
       console.error('Failed to login:', error);

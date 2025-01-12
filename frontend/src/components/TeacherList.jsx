@@ -34,24 +34,10 @@ const TeacherList = () => {
     };
     fetchTeachers();
 
-    const subjects = [];
-    const difficulties = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith("subject_")) {
-        subjects.push({ 
-          key: key.replace("subject_", ""), 
-          label: localStorage.getItem(key) 
-        });
-      } else if (key.startsWith("difficulty_")) {
-        difficulties.push({ 
-          key: key.replace("difficulty_", ""), 
-          label: localStorage.getItem(key) 
-        });
-      }
-    }
-    subjects.sort((a, b) => Number(a.key) - Number(b.key));
-    difficulties.sort((a, b) => Number(a.key) - Number(b.key));
+    const subjects = cache.get("subjects");
+    const difficulties = cache.get("difficultyLevels");
+    subjects.sort((a, b) => Number(a.id) - Number(b.id));
+    difficulties.sort((a, b) => Number(a.id) - Number(b.id));
     setSubjects(subjects);
     setDifficulties(difficulties);
   }, []);
@@ -89,8 +75,8 @@ const TeacherList = () => {
                   >
                     <option value="">All Subjects</option>
                     {subjects.map((subject) => (
-                      <option key={subject.key} value={subject.key}>
-                        {subject.label}
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
                       </option>
                     ))}
                   </select>
@@ -107,8 +93,8 @@ const TeacherList = () => {
                   >
                     <option value="">All Levels</option>
                     {difficulties.map((level) => (
-                      <option key={level.key} value={level.key}>
-                        {level.label}
+                      <option key={level.id} value={level.id}>
+                        {level.name}
                       </option>
                     ))}
                   </select>
@@ -138,32 +124,33 @@ const TeacherCard = ({ teacher }) => {
   });
 
   useEffect(() => {
+    const fetchTeacherRating = async () => {
+      try {
+        const data = await teachersAPI.getOneTeacherReview(teacher.id);
+        const avgRating = data.reviews.reduce((acc, rev) => acc + rev.rating, 0) / data.reviews.length;
+        setRating(avgRating || 0);
+      } catch (error) {
+        console.error('Failed to fetch teacher rating:', error);
+      }
+    };
+  
+    const fetchTeacherCalendar = async () => {
+      try {
+        const data = await teachersAPI.getCalendar(teacher.id);
+        setTeacherAvailability({
+          available_from: data.available_from,
+          available_until: data.available_until,
+          working_days: data.working_days
+        })
+      } catch (error) {
+        console.error('Failed to fetch teacher calendar:', error);
+      }
+    };
+
     fetchTeacherRating();
     fetchTeacherCalendar();
-  }, []);
+  }, [teacher.id]);
 
-  const fetchTeacherRating = async () => {
-    try {
-      const data = await teachersAPI.getOneTeacherReview(teacher.id);
-      const avgRating = data.reviews.reduce((acc, rev) => acc + rev.rating, 0) / data.reviews.length;
-      setRating(avgRating || 0);
-    } catch (error) {
-      console.error('Failed to fetch teacher rating:', error);
-    }
-  };
-
-  const fetchTeacherCalendar = async () => {
-    try {
-      const data = await teachersAPI.getCalendar(teacher.id);
-      setTeacherAvailability({
-        available_from: data.available_from,
-        available_until: data.available_until,
-        working_days: data.working_days
-      })
-    } catch (error) {
-      console.error('Failed to fetch teacher calendar:', error);
-    }
-  }
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-300">
