@@ -3,6 +3,7 @@
 from flask import Flask, request, jsonify
 from email_sender import EmailSender
 
+
 app = Flask(__name__)
 
 email_sender = EmailSender()
