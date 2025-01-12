@@ -117,15 +117,21 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
 
   const handleCreateInvoice = async () => {
     try {
-      await invoicesAPI.generateInvoice(lesson.id);
+      const message = await invoicesAPI.generateInvoice(lesson.id);
       setAlert({
         type: 'success',
         title: 'Success',
-        description: 'Invoice has been generated and sent to your email.',
+        description: message.toLocaleString(),
         icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
       console.error('Failed to create invoice:', error);
+      setAlert({
+        type: 'error',
+        title: 'Error',
+        description: error.toLocaleString(),
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
+      });
     }
   };
 
@@ -218,13 +224,13 @@ const ReviewForm = ({ teacherId, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await teachersAPI.addTeacherReview(teacherId, formData);
+      const message = await teachersAPI.addTeacherReview(teacherId, formData);
       console.log(formData)
       onSubmit();
       setAlert({
         type: 'success',
         title: 'Success',
-        description: 'Review has been submitted.',
+        description: message.toLocaleString(),
         icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
@@ -324,16 +330,22 @@ const ReportForm = ({ lessonId, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await reportsAPI.addReport(lessonId, formData);
+      const message = await reportsAPI.addReport(lessonId, formData);
       onSubmit();
       setAlert({
         type: 'success',
         title: 'Success',
-        description: 'Report has been submitted.',
+        description: message.toLocaleString(),
         icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
       console.error('Failed to submit report:', error);
+      setAlert({
+        type: 'error',
+        title: 'Error',
+        description: error.toLocaleString(),
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
+      });
     }
   };
 
