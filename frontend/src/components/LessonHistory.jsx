@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
-import { Star, Clock, Book, FileText, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
+import { Star, Clock, Book, FileText, AlertCircle, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const LessonHistory = () => {
@@ -56,6 +56,7 @@ const LessonHistory = () => {
 const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -69,9 +70,11 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   const handleCreateInvoice = async () => {
     try {
       await invoicesAPI.generateInvoice(lesson.id);
-      Alert({ 
-        title: 'Success', 
-        description: 'Invoice has been generated and sent to your email.' 
+      setAlert({
+        type: 'success',
+        title: 'Success',
+        description: 'Invoice has been generated and sent to your email.',
+        icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
       console.error('Failed to create invoice:', error);
@@ -81,6 +84,14 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   return (
     <Card className="mb-4">
       <CardContent className="p-6">
+        {/* Jeśli alert istnieje, wyświetl go */}
+        {alert && (
+          <Alert className="mb-4 flex items-start space-x-3">
+            {alert.icon}
+            <AlertTitle>{alert.title}</AlertTitle>
+            <AlertDescription>{alert.description}</AlertDescription>
+          </Alert>
+        )}
         <div className="flex items-center justify-between">
           {/* Left section - Subject and Date */}
           <div className="flex items-center space-x-8">
@@ -191,15 +202,18 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
     rating: 5,
     comment: ''
   });
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await teachersAPI.addTeacherReview(teacherId, formData);
       onSubmit();
-      Alert({ 
-        title: 'Success', 
-        description: 'Review has been submitted.' 
+      setAlert({
+        type: 'success',
+        title: 'Success',
+        description: 'Review has been submitted.',
+        icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
       console.error('Failed to submit review:', error);
@@ -208,6 +222,14 @@ const ReviewForm = ({ teacherId, onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Jeśli alert istnieje, wyświetl go */}
+      {alert && (
+        <Alert className="mb-4 flex items-start space-x-3">
+          {alert.icon}
+          <AlertTitle>{alert.title}</AlertTitle>
+          <AlertDescription>{alert.description}</AlertDescription>
+        </Alert>
+      )}
       <h4 className="text-lg font-semibold text-gray-900 mb-4">Write a Review</h4>
       <div>
         <label className="block text-sm font-medium mb-2 text-gray-700">Rating</label>
@@ -259,15 +281,18 @@ const ReportForm = ({ lessonId, onSubmit, onCancel }) => {
     comment: '',
     homework: ''
   });
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await reportsAPI.addReport(lessonId, formData);
       onSubmit();
-      Alert({ 
-        title: 'Success', 
-        description: 'Report has been submitted.' 
+      setAlert({
+        type: 'success',
+        title: 'Success',
+        description: 'Report has been submitted.',
+        icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
       console.error('Failed to submit report:', error);
@@ -276,6 +301,14 @@ const ReportForm = ({ lessonId, onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Jeśli alert istnieje, wyświetl go */}
+      {alert && (
+        <Alert className="mb-4 flex items-start space-x-3">
+          {alert.icon}
+          <AlertTitle>{alert.title}</AlertTitle>
+          <AlertDescription>{alert.description}</AlertDescription>
+        </Alert>
+      )}
       <h4 className="text-lg font-semibold text-gray-900 mb-4">Create Lesson Report</h4>
       <div>
         <label className="block text-sm font-medium mb-2 text-gray-700">Progress Rating</label>

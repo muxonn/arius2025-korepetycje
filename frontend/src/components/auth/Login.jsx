@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, ChevronRight, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { API, authAPI } from '../../services/api';
 
 const Login = () => {
@@ -12,6 +12,7 @@ const Login = () => {
     password: '',
     role: 'student'
   });
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,11 +23,13 @@ const Login = () => {
       API.setDifficultyLevels();
       navigate('/');
     } catch (error) {
-      Alert({
-        icon: <AlertCircle className="h-5 w-5" />,
+      console.error('Failed to login:', error);
+      setAlert({
+        type: 'error',
         title: 'Error',
-        description: error
-      });
+        description: 'Failed to login. Please try again later.',
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
+      })
     }
   };
 
@@ -38,6 +41,14 @@ const Login = () => {
           <p className="text-center text-gray-500">Enter your credentials to continue</p>
         </CardHeader>
         <CardContent>
+          {/* Jeśli alert istnieje, wyświetl go */}
+          {alert && (
+            <Alert className="mb-4 flex items-start space-x-3">
+              {alert.icon}
+              <AlertTitle>{alert.title}</AlertTitle>
+              <AlertDescription>{alert.description}</AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">Email</label>

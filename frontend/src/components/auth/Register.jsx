@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, UserPlus, BookOpen, User, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { authAPI } from '../../services/api';
 
 const Register = () => {
@@ -15,21 +15,20 @@ const Register = () => {
     subjects: '',
     difficulty_levels: ''
   });
+  const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await authAPI.register(formData);
-      Alert({ 
-        title: 'Success',
-        description: 'Registration successful! Please log in to continue.'
-      });
       navigate('/login');
     } catch (error) {
-      Alert({
-        icon: <AlertCircle className="h-5 w-5" />,
+      console.error('Failed to register:', error);
+      setAlert({
+        type: 'error',
         title: 'Error',
-        description: error
+        description: 'Failed to register. Please try again later.',
+        icon: <AlertCircle className="h-5 w-5 text-red-500" />
       });
     }
   };
@@ -42,6 +41,14 @@ const Register = () => {
           <p className="text-center text-gray-500">Join our learning community today</p>
         </CardHeader>
         <CardContent>
+          {/* Jeśli alert istnieje, wyświetl go */}
+          {alert && (
+            <Alert className="mb-4 flex items-start space-x-3">
+              {alert.icon}
+              <AlertTitle>{alert.title}</AlertTitle>
+              <AlertDescription>{alert.description}</AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">Full Name</label>
