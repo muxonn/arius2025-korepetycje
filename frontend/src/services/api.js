@@ -31,8 +31,8 @@ export const API = {
     }
     const data = await response.json();
     const formattedSubjects = data.subjects.map(subject => ({
-      id: subject.id,
-      name: subject.name
+      value: subject.id,
+      label: subject.name
     }));
     localStorage.setItem('subjects', JSON.stringify(formattedSubjects));
     return formattedSubjects;
@@ -46,8 +46,8 @@ export const API = {
     }
     const data = await response.json();
     const formattedLevels = data.difficulty_levels.map(level => ({
-      id: level.id,
-      name: level.name
+      value: level.id,
+      label: level.name
     }));
     localStorage.setItem('difficultyLevels', JSON.stringify(formattedLevels));
     return formattedLevels;
@@ -55,26 +55,26 @@ export const API = {
 
   getSubjectNameById: (id) => {
     const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
-    const subject = subjects.find(s => s.id === id);
-    return subject ? subject.name : null;
+    const subject = subjects.find(s => s.value === id);
+    return subject ? subject.label : null;
   },
 
   getSubjectIdByName: (name) => {
     const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
-    const subject = subjects.find(s => s.name === name);
-    return subject ? subject.id : null;
+    const subject = subjects.find(s => s.label === name);
+    return subject ? subject.value : null;
   },
 
   getDifficultyNameById: (id) => {
     const levels = JSON.parse(localStorage.getItem('difficultyLevels') || '[]');
-    const level = levels.find(l => l.id === id);
-    return level ? level.name : null;
+    const level = levels.find(l => l.value === id);
+    return level ? level.label : null;
   },
 
   getDifficultyIdByName: (name) => {
     const levels = JSON.parse(localStorage.getItem('difficultyLevels') || '[]');
-    const level = levels.find(l => l.name === name);
-    return level ? level.id : null;
+    const level = levels.find(l => l.label === name);
+    return level ? level.value : null;
   },
 }
 

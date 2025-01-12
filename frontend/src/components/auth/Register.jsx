@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, UserPlus, BookOpen, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, UserPlus, BookOpen, User, AlertCircle, DollarSign } from 'lucide-react';
 import Select from 'react-select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -14,8 +14,9 @@ const Register = () => {
     email: '',
     password: '',
     role: 'student',
-    subjects: [],
-    difficulty_levels: []
+    subject_ids: [],
+    difficulty_ids: [],
+    hourly_rate: ''
   });
   
   const [alert, setAlert] = useState(null);
@@ -63,8 +64,9 @@ const Register = () => {
       // Transform selected options back to the format expected by the API
       const transformedData = {
         ...formData,
-        subject_ids: formData.subjects.map(s => s.id).join(','),
-        difficulty_level_ids: formData.difficulty_levels.map(d => d.id).join(',')
+        subject_ids: formData.subject_ids.map(s => s.value).join(','),
+        difficulty_ids: formData.difficulty_ids.map(d => d.value).join(','),
+        hourly_rate: formData.role === 'teacher' ? parseFloat(formData.hourly_rate) : undefined
       };
       
       await authAPI.register(transformedData);
@@ -77,6 +79,14 @@ const Register = () => {
         description: 'Failed to register. Please try again later.',
         icon: <AlertCircle className="h-5 w-5 text-red-500" />
       });
+    }
+  };
+
+  const handleHourlyRateChange = (e) => {
+    const value = e.target.value;
+    // Pozwól na pusty string lub liczby z maksymalnie dwoma miejscami po przecinku
+    if (value === '' || /^\d+\.?\d{0,2}$/.test(value)) {
+      setFormData({ ...formData, hourly_rate: value });
     }
   };
 
@@ -163,11 +173,13 @@ const Register = () => {
                     <Select
                       isMulti
                       options={subjectOptions}
-                      value={formData.subjects}
-                      onChange={(selected) => setFormData({...formData, subjects: selected || []})}
+                      value={formData.subject_ids}
+                      onChange={(selected) => setFormData({...formData, subject_ids: selected || []})}
                       className="pl-8"
                       classNamePrefix="select"
                       placeholder="Select subjects..."
+                      getOptionValue={(option) => option.value}
+                      getOptionLabel={(option) => option.label}
                     />
                   </div>
                 </div>
@@ -178,11 +190,29 @@ const Register = () => {
                     <Select
                       isMulti
                       options={difficultyOptions}
-                      value={formData.difficulty_levels}
-                      onChange={(selected) => setFormData({...formData, difficulty_levels: selected || []})}
+                      value={formData.difficulty_ids}
+                      onChange={(selected) => setFormData({...formData, difficulty_ids: selected || []})}
                       className="pl-8"
                       classNamePrefix="select"
                       placeholder="Select difficulty levels..."
+                      getOptionValue={(option) => option.value}
+                      getOptionLabel={(option) => option.label}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">Hourly Rate ($)</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.hourly_rate}
+                      onChange={handleHourlyRateChange}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your hourly rate"
+                      required={formData.role === 'teacher'}
                     />
                   </div>
                 </div>

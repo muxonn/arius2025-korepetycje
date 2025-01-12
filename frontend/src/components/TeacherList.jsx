@@ -36,8 +36,8 @@ const TeacherList = () => {
 
     const subjects = cache.get("subjects");
     const difficulties = cache.get("difficultyLevels");
-    subjects.sort((a, b) => Number(a.id) - Number(b.id));
-    difficulties.sort((a, b) => Number(a.id) - Number(b.id));
+    subjects.sort((a, b) => Number(a.value) - Number(b.value));
+    difficulties.sort((a, b) => Number(a.value) - Number(b.value));
     setSubjects(subjects);
     setDifficulties(difficulties);
   }, []);
@@ -75,8 +75,8 @@ const TeacherList = () => {
                   >
                     <option value="">All Subjects</option>
                     {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
+                      <option key={subject.value} value={subject.value}>
+                        {subject.label}
                       </option>
                     ))}
                   </select>
@@ -93,8 +93,8 @@ const TeacherList = () => {
                   >
                     <option value="">All Levels</option>
                     {difficulties.map((level) => (
-                      <option key={level.id} value={level.id}>
-                        {level.name}
+                      <option key={level.value} value={level.value}>
+                        {level.label}
                       </option>
                     ))}
                   </select>
