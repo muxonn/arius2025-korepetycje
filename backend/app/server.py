@@ -6,13 +6,11 @@ from urls.auth import auth
 from urls.api import api, update_lesson_status_helper
 from config import Config
 from flask_jwt_extended import JWTManager
-from flask_cors import CORS
 from flasgger import Swagger
 from sqlalchemy.exc import OperationalError
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
-CORS(app)
 
 try:
     # Load app config
@@ -55,10 +53,6 @@ app.register_blueprint(api, url_prefix="/api")
 @app.errorhandler(404)
 def page_not_found(e):
     return jsonify({"error": "Page not found"}), 404
-
-
-# if __name__ == '__main__': 
-#     app.run(port=5000, debug=True)
 
 
 if __name__ == '__main__':
