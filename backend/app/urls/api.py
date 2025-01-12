@@ -330,18 +330,34 @@ def add_lesson():
     if Lesson.query.filter_by(student_id=user.id, date=date).first():
         return jsonify({'message': 'User has already booked lesson for this date'}), 400
 
-    new_lesson = Lesson(teacher_id=teacher_id,
-                        student_id=user.id,
-                        date=date,
-                        subject_id=subject_id,
-                        difficulty_level_id=difficulty_level_id,
-                        status="scheduled",
-                        price=teacher.hourly_rate
-                        )
+    new_lesson = Lesson(
+        teacher_id=teacher_id,
+        student_id=user.id,
+        date=date,
+        subject_id=subject_id,
+        difficulty_level_id=difficulty_level_id,
+        status="scheduled",
+        price=teacher.hourly_rate
+    )
 
     db.session.add(new_lesson)
     db.session.commit()
 
+    email_service_url = "http://host.docker.internal:5001/send-email"
+    email_payload = {
+        "email_receiver": user.email,
+        "subject": f"Lesson has been scheduled",
+        "body": (
+            f"Dear {user.name},\n\n"
+            f"Your lesson with {teacher.name} has been successfully scheduled.\n\n"
+            f"Date: {date.strftime('%Y-%m-%d')}"
+            "Best regards,\n"
+            "Your Teaching Service Team"
+        ),
+        }
+
+    response = requests.post(email_service_url, json=email_payload)
+        
     return jsonify({'message': 'Lesson created'}), 201
 
 
@@ -500,7 +516,7 @@ def generate_and_send_invoice(invoice_id):
         )
 
         generator = PDFInvoiceGenerator()
-        generator.create_invoice(lesson_invoice)  # Zapis do domyślnej lokalizacji
+        generator.create_invoice(lesson_invoice)
 
         # `PDFInvoiceGenerator`
         pdf_filename = f"invoice_{invoice_id}.pdf"
