@@ -33,13 +33,21 @@ def register():
         new_user = Student(name=name, email=email, role='student')
     elif role == 'teacher':
 
-        subjects = data.get('subjects')
-        difficulty_levels = data.get('difficulty_levels')
+        subject_ids = data.get('subject_ids')
+        difficulty_level_ids = data.get('difficulty_ids')
+        hourly_rate = data.get('hourly_rate')
 
-        if not subjects or not difficulty_levels:
-            return jsonify({"message": "Subjects and difficulty levels are required."}), 400
+        if not subject_ids or not difficulty_level_ids:
+            return jsonify({"message": "Subjects, difficulty levels and hourly rate are required."}), 400
 
-        new_user = Teacher(name=name, email=email, subjects=subjects, difficulty_levels=difficulty_levels, role='teacher')
+        new_user = Teacher(
+            name=name,
+            email=email,
+            subject_ids=subject_ids,
+            difficulty_level_ids=difficulty_level_ids,
+            hourly_rate=hourly_rate,
+            role='teacher'
+        )
 
     new_user.set_password(password)
 
@@ -58,16 +66,14 @@ def login():
 
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role')
 
-    if not email or not password or not role:
-        return jsonify({"message": "Email, password and role are required."}), 400
+    if not email or not password:
+        return jsonify({"message": "Email, password are required."}), 400
 
     # Find the user by email in both Student and Teacher tables
-    user = None
-    if role == 'student':
-        user = Student.query.filter_by(email=email).first()
-    elif role == "teacher":
+
+    user = Student.query.filter_by(email=email).first()
+    if not user:
         user = Teacher.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
@@ -75,7 +81,8 @@ def login():
         access_token = user.generate_jwt()
         return jsonify({
             "message": "Login successful.",
-            "access_token": access_token
+            "access_token": access_token,
+            "role": user.role
         }), 200
     else:
         return jsonify({"message": "Invalid email or password."}), 401
