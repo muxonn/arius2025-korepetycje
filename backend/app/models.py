@@ -88,7 +88,10 @@ class Lesson(db.Model):
             'subject': self.subject_id,
             'date': self.date.strftime("%d/%m/%Y %H:%M"),
             'status': self.status,
-            'price': self.price
+            'price': self.price,
+            'is_reviewed': self.is_reviewed,
+            'is_reported': self.is_reported,
+            'difficulty_id' : self.difficulty_level_id,
         }
 
 class Calendar(db.Model):

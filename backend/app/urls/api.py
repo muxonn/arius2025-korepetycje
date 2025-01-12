@@ -16,8 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pdf_generator.lesson_invoice import LessonInvoice
 from pdf_generator.pdf_generator import PDFInvoiceGenerator
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, \
-    DifficultyLevel, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, DifficultyLevel, db
 
 api = Blueprint('api', __name__)
 
@@ -128,6 +127,8 @@ def update_teacher():
     return jsonify({'message': 'Teacher details updated'}), 200
 
 
+
+
 ### Reviews ###
 
 @api.route('/teacher-reviews', methods=['GET'])
@@ -207,7 +208,7 @@ def add_review(teacher_id):
     if not comment:
         comment = ""
 
-    return jsonify({"rating": rating, "comment": comment}), 200
+    return jsonify({"message": "Review created successfully."}), 200
 
 
 @api.route('/teacher-reviews/<int:teacher_id>', methods=['DELETE'])
@@ -368,7 +369,7 @@ def add_lesson():
     }
 
     requests.post(email_service_url, json=email_payload)
-
+        
     return jsonify({'message': 'Lesson created'}), 201
 
 
@@ -440,44 +441,8 @@ def get_lesson_by_id(teacher_id):
 ### Invoices ###
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "../static_invoices")
-BASE_DIR = os.path.abspath(BASE_DIR)
+BASE_DIR = os.path.abspath(BASE_DIR) 
 
-
-@api.route('/invoice', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
-@jwt_required()
-def add_invoice():
-    user = get_user_by_jwt()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 401
-
-    if user.role != 'student':
-        return jsonify({'message': 'User can not be a teacher'}), 400
-
-    data = request.get_json()
-
-    lesson_id = data.get('lesson_id')
-
-    lesson = Lesson.query.filter_by(id=lesson_id).first()
-    if not lesson:
-        return jsonify({'message': 'Lesson not found'}), 400
-
-    invoice = Invoice.query.filter_by(lesson_id=lesson_id).first()
-
-    if invoice:
-        return jsonify({'message': 'Lesson already invoiced'}), 400
-
-    new_invoice = Invoice(lesson_id=lesson_id, price=lesson.price)
-
-    db.session.add(new_invoice)
-    db.session.commit()
-
-    return jsonify({'message': 'Invoice created'}), 201
-
-
-# Necassary endpoint used by the email service, not
-# meant to be used by external programs/services
 @api.route('/generated-invoice-pdf/<filename>', methods=['GET'])
 def get_pdf(filename):
     try:
@@ -485,19 +450,15 @@ def get_pdf(filename):
     except FileNotFoundError:
         return jsonify({"error": "File not found"}), 400
 
-
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static_invoices"))
 
-
-@api.route('/generate-and-send-invoice/<int:invoice_id>', methods=['POST'])
-@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'generate_and_send_invoice.yml'))
 def generate_and_send_invoice(invoice_id):
     try:
         # Pobranie danych z bazy danych
         invoice = Invoice.query.filter_by(id=invoice_id).first()
         if not invoice:
             return jsonify({"error": "Invoice not found"}), 404
-
+        
         lesson = Lesson.query.filter_by(id=invoice.lesson_id).first()
         if not lesson:
             return jsonify({"error": "Lesson not found"}), 404
@@ -509,7 +470,7 @@ def generate_and_send_invoice(invoice_id):
         teacher = Teacher.query.filter_by(id=lesson.teacher_id).first()
         if not teacher:
             return jsonify({"error": "Teacher not found"}), 404
-
+        
         subject = Subject.query.filter_by(id=lesson.subject_id).first()
         if not subject:
             return jsonify({"error": "Subject not found"}), 404
@@ -536,6 +497,7 @@ def generate_and_send_invoice(invoice_id):
         pdf_filename = f"invoice_{invoice_id}.pdf"
         pdf_url = f"http://host.docker.internal:5000/api/generated-invoice-pdf/{pdf_filename}"
 
+        
         email_service_url = "http://host.docker.internal:5001/send-email"
         email_payload = {
             "email_receiver": student.email,
@@ -550,7 +512,7 @@ def generate_and_send_invoice(invoice_id):
         }
 
         response = requests.post(email_service_url, json=email_payload)
-
+        
         # Obsługa odpowiedzi z mikroserwisu
         if response.status_code == 200:
             return jsonify({
@@ -564,6 +526,44 @@ def generate_and_send_invoice(invoice_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api.route('/invoice', methods=['POST'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
+@jwt_required()
+def add_invoice():
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    if user.role != 'student':
+        return jsonify({'message': 'User can not be a teacher'}), 400
+
+    data = request.get_json()
+
+    lesson_id = data.get('lesson_id')
+
+    lesson = Lesson.query.filter_by(id=lesson_id).first()
+    if not lesson:
+        return jsonify({'message': 'Lesson not found'}), 400
+
+    invoice = Invoice.query.filter_by(lesson_id=lesson_id).first()
+
+    if invoice:
+        return jsonify({'message': 'Lesson already invoiced'}), 400
+
+    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
+
+    db.session.add(new_invoice)
+    db.session.commit()
+
+    generate_and_send_invoice(new_invoice.id)
+
+    return jsonify({'message': 'Invoice created'}), 201
+
+
+# Necassary endpoint used by the email service, not
+# meant to be used by external programs/services
 
 
 ### End of invoices ###
@@ -678,6 +678,36 @@ def get_report():
     return jsonify({'report_list': report_list}), 200
 
 
+@api.route('/report/<int:lesson_id>', methods=['GET'])
+# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_report.yml'))
+@jwt_required()
+def get_report_by_lesson_id(lesson_id):
+    user = get_user_by_jwt()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 401
+
+    report = LessonReport.query.filter_by(lesson_id=lesson_id).first()
+
+    if not report:
+        return jsonify({'message': 'No reports found'}), 400
+
+    if not (report.teacher_id == user.id or report.student_id == user.id):
+        return jsonify({'message': 'You are not authorized to view this report}'}), 400
+
+    report_dict = {
+        "student_name": Student.query.filter_by(id=report.student_id).first().name,
+         "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
+         "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
+         "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
+         "homework": report.homework,
+         "progress_rating": report.progress_rating,
+         "comment": report.comment,
+    }
+
+    return jsonify({'report': report_dict}), 200
+
+
 ### End of reports ###
 
 
@@ -749,7 +779,6 @@ def get_calendar(teacher_id):
         return jsonify({'message': 'Calendar not found'}), 404
 
     return jsonify(calendar.to_dict()), 200
-
 
 ### End of calendars ###
 
