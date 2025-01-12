@@ -1,7 +1,7 @@
 tags:
   - Authentication
 summary: Register a new user
-description: Allows new users (students or teachers) to register.
+description: Allows new users (students or teachers) to register. Validates input fields, including email format.
 operationId: register
 parameters:
   - name: body
@@ -24,7 +24,41 @@ parameters:
           enum:
             - student
             - teacher
-          example: "student"
+          example: "teacher"
+        subject_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+          description: Required for teachers. List of subject IDs the teacher specializes in.
+        difficulty_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+          description: Required for teachers. List of difficulty levels the teacher can handle.
+        hourly_rate:
+          type: number
+          example: 50
+          description: Required for teachers. Hourly rate in the chosen currency.
+    examples:
+      teacher:
+        summary: Example request for a teacher
+        value:
+          name: "Jane Smith"
+          email: "jane.smith@example.com"
+          password: "securepassword"
+          role: "teacher"
+          subject_ids: [1, 2]
+          difficulty_ids: [1, 2]
+          hourly_rate: 50
+      student:
+        summary: Example request for a student
+        value:
+          name: "John Doe"
+          email: "john.doe@example.com"
+          password: "password123"
+          role: "student"
 responses:
   201:
     description: User successfully registered.
@@ -41,6 +75,25 @@ responses:
       properties:
         message:
           type: string
-          example: "Email already in use."
+          example: >
+            - "Name, email, password, and role are required."
+            - "Invalid email format."
+            - "Role must be either 'student' or 'teacher'."
+            - "Subjects, difficulty levels and hourly rate are required."
+            - "Email already in use."
+  401:
+    description: Unauthorized access or invalid credentials.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Unauthorized."
   500:
     description: Internal server error.
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "An unexpected error occurred. Please try again later."
