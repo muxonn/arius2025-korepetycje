@@ -499,20 +499,17 @@ def generate_and_send_invoice(invoice_id):
             issue_date=invoice.created_at
         )
 
-        # Generowanie PDF
         generator = PDFInvoiceGenerator()
         generator.create_invoice(lesson_invoice)  # Zapis do domyślnej lokalizacji
 
-        # Ścieżka PDF generowana przez `PDFInvoiceGenerator`
+        # `PDFInvoiceGenerator`
         pdf_filename = f"invoice_{invoice_id}.pdf"
         pdf_url = f"http://host.docker.internal:5000/api/generated-invoice-pdf/{pdf_filename}"
 
-        # Sprawdzamy, czy plik istnieje
-
-        # Wysyłanie e-maila przez mikroserwis
-        email_service_url = "http://127.0.0.1:5001/send-email"
+        
+        email_service_url = "http://host.docker.internal:5001/send-email"
         email_payload = {
-            "email_receiver": "jaiwiecejmnie@gmail.com",
+            "email_receiver": student.email,
             "subject": f"Invoice #{invoice_id}",
             "body": (
                 f"Dear {student.name},\n\n"
@@ -742,4 +739,4 @@ def update_lesson_status():
 
 
 def update_lesson_status_helper():
-    response = requests.post("http://localhost:5000/api/update-lesson-status")
+    response = requests.post("http://host.docker.internal:5000/api/update-lesson-status")
