@@ -59,7 +59,8 @@ class Teacher(BaseUser):
             'name': self.name,
             'subjects': self.subject_ids,
             'difficulty_levels': self.difficulty_level_ids,
-            'bio': self.bio
+            'bio': self.bio,
+            'hourly_rate': self.hourly_rate
         }
 
 
