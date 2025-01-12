@@ -54,17 +54,17 @@ const NavBar = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-4 flex-nowrap">
+            <div className="flex items-center space-x-4">
               <Link 
                 to="/login" 
-                className="flex items-center space-x-1 hover:text-blue-200 transition-colors whitespace-nowrap"
+                className="flex items-center space-x-1 hover:text-blue-200 transition-colors"
               >
                 <User size={20} />
                 <span>Login</span>
               </Link>
               <Link 
                 to="/register" 
-                className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
+                className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50 transition-colors"
               >
                 Register
               </Link>

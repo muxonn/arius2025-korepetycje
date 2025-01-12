@@ -56,7 +56,6 @@ const Schedule = () => {
     const getFilteredSubjects = () => {
       const cachedData = cache.get("teacherData");
       if (!cachedData) console.error("No data in cache!");
-      console.log(cachedData)
       const teacher = cachedData.find((t) => t.id === parseInt(teacherId, 10));
       if (teacher && teacher.subjects) {
         const subjects = util.getSubjectNamesFromIdString(teacher.subjects);
@@ -69,7 +68,6 @@ const Schedule = () => {
     const getFilteredDifficulties = () => {
       const cachedData = cache.get("teacherData");
       if (!cachedData) console.error("No data in cache!");
-      console.log(cachedData)
       const teacher = cachedData.find((t) => t.id === parseInt(teacherId, 10));
       if (teacher && teacher.difficulty_levels) {
         const difficulties = util.getDifficultyNamesFromIdString(teacher.difficulty_levels);
@@ -177,7 +175,7 @@ const Schedule = () => {
                       onChange={(e) => setSubject(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white mt-4"
                     >
-                      <option value="" disabled selected hidden>
+                      <option value="" disabled hidden>
                         Select a subject...
                       </option>
                       {filteredSubjects.map((subject) => (
@@ -200,7 +198,7 @@ const Schedule = () => {
                       onChange={(e) => setDifficulty(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white mt-4"
                     >
-                      <option value="" disabled selected hidden>
+                      <option value="" disabled hidden>
                         Select a difficulty level...
                       </option>
                       {filteredDifficulties.map((difficulty) => (

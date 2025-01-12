@@ -18,7 +18,7 @@ const TeacherList = () => {
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
-        const cachedData = cache.get("teacherData");
+        let cachedData = cache.get("teacherData");
         if (cachedData) {
           console.log("Using cached data");
           setTeachers(cachedData);

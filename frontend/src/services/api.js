@@ -95,7 +95,7 @@ export const authAPI = {
 
 // Nauczyciele
 export const teachersAPI = {
-  getTeacherList: ({ subject = null, difficulty = null}) => {
+  getTeacherList: ({ subject = null, difficulty = null } = {}) => {
     const query = new URLSearchParams();
     if (subject) query.append('subject', subject);
     if (difficulty) query.append('difficulty_id', difficulty);

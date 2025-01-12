@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, ChevronRight, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ChevronRight, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { API, authAPI } from '../../services/api';
@@ -10,8 +10,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    role: 'student'
+    password: ''
   });
   const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
@@ -20,6 +19,7 @@ const Login = () => {
     try {
       const data = await authAPI.login(formData);
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
       let subjects = cache.get("subjects");
       let difficulties = cache.get("difficulties");
       if (!subjects || !difficulties) {
@@ -89,20 +89,6 @@ const Login = () => {
                   placeholder="Enter your password"
                   required
                 />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">Role</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value})}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                >
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                </select>
               </div>
             </div>
             <button

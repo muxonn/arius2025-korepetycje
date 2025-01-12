@@ -1,9 +1,10 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
+import { API, invoicesAPI, lessonsAPI, reportsAPI, teachersAPI } from '../services/api';
 import { Star, Clock, Book, FileText, AlertCircle, CheckCircle, MessageSquare, FilePlus2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { cache } from '../utils/formatters';
 
 const LessonHistory = () => {
   const [lessons, setLessons] = useState([]);
@@ -56,7 +57,17 @@ const LessonHistory = () => {
 const LessonCard = ({ lesson, report, onLessonUpdated }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [teacher, setTeacher] = useState(null);
   const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
+
+  useEffect(() => {
+    // Pobierz dane nauczyciela na podstawie lesson.teacher_id
+    const teacherData = cache.get('teacherData'); // Pobieramy dane z localStorage
+    if (teacherData) {
+      const teacherInfo = teacherData.find(t => t.id === lesson.teacher_id);
+      setTeacher(teacherInfo);
+    }
+  }, [lesson.teacher_id]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -93,16 +104,21 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
           </Alert>
         )}
         <div className="flex items-center justify-between">
-          {/* Left section - Subject and Date */}
+          {/* Left section - Subject, Teacher, and Date */}
           <div className="flex items-center space-x-8">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">{lesson.subject}</h3>
+              <h3 className="text-xl font-bold text-gray-900"><strong>Subject: </strong>{API.getSubjectNameById(lesson.subject)}</h3>
               <div className="flex items-center mt-1">
                 <Clock size={16} className="mr-2 text-gray-500" />
                 <span className="text-gray-600">
                   {new Date(lesson.date).toLocaleString()}
                 </span>
               </div>
+              {teacher && (
+                <div className="mt-1 text-gray-700">
+                  <strong>Teacher:</strong> {teacher.name}
+                </div>
+              )}
             </div>
           </div>
           
@@ -113,8 +129,11 @@ const LessonCard = ({ lesson, report, onLessonUpdated }) => {
             </span>
           </div>
 
-          {/* Right section - Actions */}
+          {/* Right section - Actions and Price */}
           <div className="flex items-center space-x-4 flex-nowrap overflow-x-auto">
+            <div className="text-gray-700">
+              <strong>Price:</strong> ${lesson.price || teacher?.hourly_rate || 'N/A'}
+            </div>
             {lesson.status === 'completed' && !report && (
             <button
               onClick={() => setShowReportForm(true)}
