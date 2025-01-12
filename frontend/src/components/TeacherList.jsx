@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { teachersAPI } from '../services/api';
 import { Star, Calendar, Book, Award } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { util } from '../utils/formatters';
 
 const TeacherList = () => {
   const [teachers, setTeachers] = useState([]);
@@ -126,26 +127,26 @@ const TeacherCard = ({ teacher }) => {
             </div>
           </div>
           <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-            ${teacher.hourly_rate}/hr
+            {teacher.hourly_rate} PLN/h
           </div>
         </div>
 
         <div className="space-y-3 mb-6">
           <div className="flex items-center text-gray-600">
             <Book size={16} className="mr-2" />
-            <span className="text-sm">{teacher.subjects.replace(/{|}/g, '').split(',').join(', ')}</span>
+            <span className="text-sm">{util.getSubjectNamesFromIdString(teacher.subjects).join(", ")}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Award size={16} className="mr-2" />
-            <span className="text-sm">{teacher.difficulty_levels.replace(/{|}/g, '').split(',').join(', ')}</span>
+            <span className="text-sm">{util.getDifficultyNamesFromIdString(teacher.difficulty_levels).join(", ")}</span>
+          </div>
+          <div className="flex items-center text-gray-600">
+            <Calendar size={16} className="mr-2" />
+            <span className="text-sm">{util.getWorkingDaysFromIdString(teacherAvailabilty.working_days).join(", ")}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Calendar size={16} className="mr-2" />
             <span className="text-sm">{teacherAvailabilty.available_from} - {teacherAvailabilty.available_until}</span>
-          </div>
-          <div className="flex items-center text-gray-600">
-            <Calendar size={16} className="mr-2" />
-            <span className="text-sm">{teacherAvailabilty.working_days}</span>
           </div>
         </div>
 

@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle } from 'lucide-react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { format, getDay, setHours, setMinutes } from 'date-fns';
+import { pl } from 'date-fns/locale/pl';
+import "react-datepicker/dist/react-datepicker.css";
+import { Calendar, BookOpen, AlertCircle, CheckCircle, Space } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { lessonsAPI, teachersAPI } from '../services/api';
+import { util } from '../utils/formatters';
+registerLocale('pl', pl)
 
 const Schedule = () => {
   const { teacherId } = useParams();
   const [calendar, setCalendar] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
+  const [excludedTimes, setExcludedTimes] = useState(null);
+  const [lessons, setLessons] = useState(null);
   const [subject, setSubject] = useState('');
   const [alert, setAlert] = useState(null); // Stan dla wyświetlania alertów
 
@@ -29,14 +36,31 @@ const Schedule = () => {
       }
     };
 
+    const fetchTeacherLessons = async () => {
+      try {
+        const data = await teachersAPI.getTeacherLessons(teacherId);
+        setLessons(data.lesson_list);
+      } catch (error) {
+        console.error('Failed to fetch teacher lessons:', error);
+        setAlert({
+          type: 'error',
+          title: 'Error',
+          description: 'Failed to fetch teacher lessons. Please try again later.',
+          icon: <AlertCircle className="h-5 w-5 text-red-500" />
+        });
+      }
+    }
+
     fetchCalendar();
+    fetchTeacherLessons();
+    excludeTeacherTimes();
   }, [teacherId]);
 
   const handleScheduleLesson = async () => {
-    if (!selectedDate || !selectedTime || !subject) return;
+    if (!selectedDate || !subject) return;
 
     try {
-      const dateTime = `${selectedDate} ${selectedTime}`;
+      const dateTime = format(selectedDate, 'dd/MM/yyyy HH:mm');
       await lessonsAPI.scheduleLesson({
         teacher_id: teacherId,
         subject,
@@ -60,21 +84,41 @@ const Schedule = () => {
     }
   };
 
-  const generateTimeSlots = () => {
+  const excludeTeacherTimes = () => {
     if (!calendar) return [];
     
-    const slots = [];
-    let current = new Date(`2000-01-01 ${calendar.available_from}`);
-    const end = new Date(`2000-01-01 ${calendar.available_until}`);
-    
-    while (current < end) {
-      slots.push(
-        current.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
-      );
+    const allSlots = [];
+    let current = setHours(setMinutes(new Date(), 0), 0);
+    const EOD = setHours(setMinutes(new Date(), 59), 23);
+
+    // Generowanie wszystkich slotow godzinnych w ciagu doby
+    while (current <= EOD) {
+      allSlots.push(current);
       current.setHours(current.getHours() + 1);
     }
+
+    // Sloty poza godzinami dostepnosci
+    const unavailableSlots = [];
+    const start = util.getDateFromTimeString(calendar.available_from);
+    const end = util.getDateFromTimeString(calendar.available_until);
     
-    return slots;
+    allSlots.forEach(slot => {
+      if (slot < start || slot >= end) {
+        unavailableSlots.push(slot);
+      }
+    });
+    
+    setExcludedTimes(unavailableSlots);
+  };
+
+  const subtractOneHour = (date) => {
+    return date.setHours(date.getHours() - 1);
+  }
+
+  const isAllowedDay = (date) => {
+    const day = getDay(date) - 0; // Pobiera dzień tygodnia
+    const allowedDays = calendar.working_days.replace(/{|}/g, '').split(',').map(Number).map(num => num % 7);
+    return allowedDays.includes(day);
   };
 
   return (
@@ -97,50 +141,41 @@ const Schedule = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {calendar && 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">Select Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="date"
-                      onChange={(e) => {
-                        const rawDate = e.target.value; // YYYY-MM-DD
-                        const formattedDate = rawDate.split('-').reverse().join('/'); // DD/MM/YYYY
-                        setSelectedDate(formattedDate);
-                      }}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      min={new Date().toISOString().split('T')[0]}
+                    <Space /><Space /><Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <DatePicker
+                      locale={pl}
+                      dateFormat="Pp"
+                      selected={selectedDate}
+                      onChange={e => setSelectedDate(e)}
+                      filterDate={isAllowedDay}
+                      showTimeSelect
+                      timeIntervals={60}
+                      minTime={subtractOneHour(util.getDateFromTimeString(calendar.available_from))}
+                      maxTime={subtractOneHour(util.getDateFromTimeString(calendar.available_until))}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg"
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Select Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <select
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                    >
-                      <option value="">Select time...</option>
-                      {generateTimeSlots().map((time) => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                }
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2 text-gray-700">Subject</label>
                   <div className="relative">
                     <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="text"
+                    <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter subject..."
-                    />
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    >
+                      <option value="" disabled>
+                        Select a subject...
+                      </option>
+                      {}
+                    </select>
                   </div>
                 </div>
 
@@ -148,7 +183,7 @@ const Schedule = () => {
                   <button
                     onClick={handleScheduleLesson}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    disabled={!selectedDate || !selectedTime || !subject}
+                    disabled={!selectedDate || !subject}
                   >
                     Schedule Lesson
                   </button>

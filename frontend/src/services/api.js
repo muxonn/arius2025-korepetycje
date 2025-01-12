@@ -22,6 +22,63 @@ const fetchWithAuth = async (endpoint, options = {}) => {
   return response.json();
 };
 
+export const API = {
+  setSubjects: async () => {
+    const response = await fetch(`${API_URL}/api/subjects`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'API request failed');
+    }
+    response.json().then(data => {
+      data.subjects.forEach(subject => {
+        localStorage.setItem(`subject_${subject.id}`, subject.name);
+      });
+    });
+  },
+  setDifficultyLevels: async () => {
+    const response = await fetch(`${API_URL}/api/difficulty-levels`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'API request failed');
+    }
+    response.json().then(data => {
+      data.difficulty_levels.forEach(difficulty => {
+        localStorage.setItem(`difficulty_${difficulty.id}`, difficulty.name);
+      });
+    });
+  },
+  getSubjectNameById: (id) => {
+    return localStorage.getItem(`subject_${id}`);
+  },
+  getSubjectIdByName: (name) => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("subject_")) {
+        const storedName = localStorage.getItem(key);
+        if (storedName === name) {
+          return parseInt(key.split("_")[1], 10);
+        }
+      }
+    }
+    return null;
+  },
+  getDifficultyNameById: (id) => {
+    return localStorage.getItem(`difficulty_${id}`);
+  },
+  getDifficultyIdByName: (name) => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("difficulty_")) {
+        const storedName = localStorage.getItem(key);
+        if (storedName === name) {
+          return parseInt(key.split("_")[1], 10);
+        }
+      }
+    }
+    return null;
+  },
+}
+
 // Autentykacja
 export const authAPI = {
   register: (userData) => 
@@ -45,6 +102,9 @@ export const teachersAPI = {
     if (difficulty) query.append('difficulty', difficulty);
     return fetchWithAuth(`/api/teacher-list?${query.toString()}`);
   },
+
+  getTeacherLessons: (teacherId) =>
+    fetchWithAuth(`/api/lesson/${teacherId}`),
 
   getAllTeacherReviews: () => 
     fetchWithAuth('/api/teacher-reviews'),

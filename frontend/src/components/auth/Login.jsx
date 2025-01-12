@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, ChevronRight, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
-import { authAPI } from '../../services/api';
+import { API, authAPI } from '../../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +18,8 @@ const Login = () => {
     try {
       const data = await authAPI.login(formData);
       localStorage.setItem('token', data.access_token);
+      API.setSubjects();
+      API.setDifficultyLevels();
       navigate('/');
     } catch (error) {
       Alert({
