@@ -33,7 +33,7 @@ def setup_users(setup_subjects):
             student = Student(
                 id=1,
                 name="Test Student",
-                email="mikolaj.przemirski@op.pl",
+                email="student@example.com",
                 role="student",
                 password_hash=generate_password_hash("password123"),
             )
@@ -59,7 +59,7 @@ def setup_users(setup_subjects):
 def login_student(test_client, setup_users):
     """Log in as a student and return a JWT token."""
     response = test_client.post('/auth/login', json={
-        'email': 'mikolaj.przemirski@op.pl',
+        'email': 'student@example.com',
         'password': 'password123'
     })
     assert response.status_code == 200
