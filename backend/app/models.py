@@ -102,15 +102,6 @@ class Calendar(db.Model):
     available_until = db.Column(db.Time, nullable=False)
     working_days = db.Column(db.Text, nullable=False)  # List of ISO format weekdays (1-7)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'teacher_id': self.teacher_id,
-            'available_from': self.available_from.strftime("%H:%M"),
-            'available_until': self.available_until.strftime("%H:%M"),
-            'working_days': self.working_days
-        }
-
 
 class LessonReport(db.Model):
     __tablename__ = 'lesson_reports'
