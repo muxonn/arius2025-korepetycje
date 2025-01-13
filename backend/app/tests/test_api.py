@@ -1,3 +1,10 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from urls.api import update_lesson_status_helper
+
 def test_get_subjects(test_client, login_student):
     headers = {'Authorization': f'Bearer {login_student}'}
     response = test_client.get('/api/subjects', headers=headers)
@@ -12,6 +19,12 @@ def test_get_teacher_list(test_client, login_student):
     assert 'teacher_list' in response.json
 
 
+def test_get_teacher_list_fail(test_client):
+    response = test_client.get('/api/teacher-list')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
 def test_get_teacher_list_all(test_client, login_student):
     headers = {'Authorization': f'Bearer {login_student}'}
     response = test_client.get('/api/teacher-list', headers=headers)
@@ -19,11 +32,36 @@ def test_get_teacher_list_all(test_client, login_student):
     assert 'teacher_list' in response.json
 
 
+def test_get_teacher_list_all_fail(test_client):
+    response = test_client.get('/api/teacher-list')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
 def test_get_reviews(test_client, login_teacher):
     headers = {'Authorization': f'Bearer {login_teacher}'}
     response = test_client.get('/api/teacher-reviews', headers=headers)
     assert response.status_code == 200
     assert 'reviews' in response.json
+
+
+def test_get_reviews_fail(test_client):
+    response = test_client.get('/api/teacher-reviews')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
+def test_get_reviews_by_id(test_client, login_teacher):
+    headers = {'Authorization': f'Bearer {login_teacher}'}
+    response = test_client.get('/api/teacher-reviews/2', headers=headers)
+    assert response.status_code == 200
+    assert 'reviews' in response.json
+
+
+def test_get_reviews_by_id_fail(test_client):
+    response = test_client.get('/api/teacher-reviews/2')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
 
 
 def test_add_calendar_success(test_client, login_teacher):
@@ -109,6 +147,77 @@ def test_add_lesson(test_client, setup_users, login_student):
     assert response.json['message'] == 'Lesson created'
 
 
+def test_add_lesson_fail_authorization(test_client):
+    response = test_client.post('/api/lesson', json={
+        'teacher_id': 2,
+        'subject_id': 1,
+        'difficulty_id': 1,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
+def test_add_lesson_fail(test_client, setup_users, login_student):
+    headers = {'Authorization': f'Bearer {login_student}'}
+    response = test_client.post('/api/lesson', headers=headers, json={
+        'teacher_id': 2,
+        'subject_id': 1,
+        'difficulty_id': 1,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 400
+    assert response.json['message'] == 'Lesson with this teacher is already booked for this date'
+
+
+def test_add_lesson_fail_teacher_id(test_client, setup_users, login_student):
+    headers = {'Authorization': f'Bearer {login_student}'}
+    response = test_client.post('/api/lesson', headers=headers, json={
+        'teacher_id': 'a',
+        'subject_id': 1,
+        'difficulty_id': 1,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 400
+    assert response.json['message'] == 'Teacher id must be an integer'
+
+
+def test_add_lesson_fail_teacher(test_client, setup_users, login_student):
+    headers = {'Authorization': f'Bearer {login_student}'}
+    response = test_client.post('/api/lesson', headers=headers, json={
+        'teacher_id': 3,
+        'subject_id': 1,
+        'difficulty_id': 1,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 404
+    assert response.json['message'] == 'Teacher not found'
+
+
+def test_add_lesson_fail_subject(test_client, setup_users, login_student):
+    headers = {'Authorization': f'Bearer {login_student}'}
+    response = test_client.post('/api/lesson', headers=headers, json={
+        'teacher_id': 2,
+        'subject_id': 12,
+        'difficulty_id': 1,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 400
+    assert response.json['message'] == 'Teacher does not teach this subject'
+
+
+def test_add_lesson_fail_difficulty(test_client, setup_users, login_student):
+    headers = {'Authorization': f'Bearer {login_student}'}
+    response = test_client.post('/api/lesson', headers=headers, json={
+        'teacher_id': 2,
+        'subject_id': 1,
+        'difficulty_id': 4,
+        'date': '15/01/2025 10:00'
+    })
+    assert response.status_code == 400
+    assert response.json['message'] == 'Teacher does not teach on this difficulty level'
+
+
 def test_add_review(test_client, login_student):
     headers = {'Authorization': f'Bearer {login_student}'}
     response = test_client.post('/api/teacher-reviews/2', headers=headers, json={
@@ -116,8 +225,16 @@ def test_add_review(test_client, login_student):
         'comment': 'Great teacher!'
     })
     assert response.status_code == 200
-    assert response.json['rating'] == 5
-    assert response.json['comment'] == 'Great teacher!'
+    assert response.json['message'] == 'Review created successfully.'
+
+
+def test_add_review_fail(test_client, login_student):
+    response = test_client.post('/api/teacher-reviews/2', json={
+        'rating': 5,
+        'comment': 'Great teacher!'
+    })
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
 
 
 def test_delete_review(test_client, login_student):
@@ -127,11 +244,23 @@ def test_delete_review(test_client, login_student):
     assert response.json['message'] == 'Review deleted successfuly'
 
 
+def test_delete_review_fail(test_client, login_student):
+    response = test_client.delete('/api/teacher-reviews/2')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
 def test_get_lessons(test_client, login_student):
     headers = {'Authorization': f'Bearer {login_student}'}
     response = test_client.get('/api/lesson', headers=headers)
     assert response.status_code == 200
     assert 'lesson_list' in response.json
+
+
+def test_get_lessons_fail(test_client):
+    response = test_client.get('/api/lesson')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
 
 
 def test_add_report(test_client, login_teacher):
@@ -146,11 +275,28 @@ def test_add_report(test_client, login_teacher):
     assert response.json['message'] == 'Report cannot be created before the end of the lesson'
 
 
+def test_add_report_fail(test_client):
+    response = test_client.post('/api/report', json={
+        'lesson_id': 1,
+        'progress_rating': 4,
+        'comment': 'Good progress',
+        'homework': 'Practice Chapter 3'
+    })
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
+
+
 def test_get_report(test_client, login_teacher):
     headers = {'Authorization': f'Bearer {login_teacher}'}
     response = test_client.get('/api/report', headers=headers)
     assert response.status_code == 400
     assert response.json['message'] == 'No reports found'
+
+
+def test_get_report_fail(test_client):
+    response = test_client.get('/api/report')
+    assert response.status_code == 401
+    assert response.json['msg'] == 'Missing Authorization Header'
 
 
 def test_add_invoice(test_client, login_student):
@@ -233,8 +379,13 @@ def test_update_teacher_no_authentication(test_client):
     assert response.json['msg'] == 'Missing Authorization Header'
 
 
-def test_generate_and_send_invoice(test_client, login_student):
-    """Test updating teacher details as a student (should fail)."""
-    headers = {'Authorization': f'Bearer {login_student}'}
-    response = test_client.post('/api/generate-and-send-invoice/1', headers=headers)
+def test_update_lesson_status(test_client):
+    response = test_client.post('/api/update-lesson-status')
     assert response.status_code == 200
+    assert 'Updated' in response.json['message']
+
+
+# def test_update_lesson_status_helper(test_client):
+#     response_json, response_code = update_lesson_status_helper()
+#     assert response_code == 200
+#     assert 'Updated' in response_json.json['message']

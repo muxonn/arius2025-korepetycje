@@ -160,7 +160,7 @@ def get_reviews_by_id(teacher_id):
     except ValueError:
         return jsonify({'message': 'Teacher id must be an integer'}), 400
 
-    teacher = Teacher.query.get(teacher_id)
+    teacher = Teacher.query.filter_by(id=teacher_id)
 
     if not teacher:
         return jsonify({'message': 'Teacher not found'}), 404
@@ -800,3 +800,4 @@ def update_lesson_status():
 
 def update_lesson_status_helper():
     response = requests.post("http://localhost:5000/api/update-lesson-status")
+    return response.json(), response.status_code
