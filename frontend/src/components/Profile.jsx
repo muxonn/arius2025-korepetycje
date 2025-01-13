@@ -44,7 +44,7 @@ const Profile = () => {
         setAlert({
           type: 'error',
           title: 'Error',
-          description: 'Failed to load subjects and difficulty levels.',
+          description: error.toLocaleString(),
           icon: <AlertCircle className="h-5 w-5 text-red-500" />
         });
       }
@@ -64,11 +64,11 @@ const Profile = () => {
         hourly_rate: formData.role === 'teacher' ? parseFloat(formData.hourly_rate) : undefined
       };
       
-      await teachersAPI.updateTeacher(transformedData);
+      const message = await teachersAPI.updateTeacher(transformedData);
       setAlert({
         type: 'success',
         title: 'Success',
-        description: 'Successfully changed your profile.',
+        description: message.toLocaleString(),
         icon: <AlertCircle className="h-5 w-5 text-green-500" />
       });
     } catch (error) {
