@@ -45,8 +45,8 @@ def register():
         new_user = Student(name=name, email=email, role='student')
     elif role == 'teacher':
 
-        subject_ids = data.get('subject_ids')
-        difficulty_level_ids = data.get('difficulty_ids')
+        subject_ids = data.get('subject_ids').replace("{","").replace("}","").split(',')
+        difficulty_level_ids = data.get('difficulty_ids').replace("{","").replace("}","").split(',')
         hourly_rate = data.get('hourly_rate')
 
         try:
