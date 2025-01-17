@@ -1,7 +1,7 @@
 tags:
   - Lessons
-summary: Add a new lesson
-description: Allows a student to schedule a lesson with a teacher.
+summary: Schedule a lesson
+description: Allows a student to book a lesson with a teacher.
 operationId: addLesson
 parameters:
   - name: body
@@ -12,32 +12,28 @@ parameters:
       properties:
         teacher_id:
           type: integer
-          example: 5
+          example: 1
           description: ID of the teacher.
-        subject:
-          type: string
-          example: "Physics"
-          description: Subject of the lesson.
+        subject_id:
+          type: integer
+          example: 3
+          description: ID of the subject for the lesson.
+        difficulty_id:
+          type: integer
+          example: 2
+          description: ID of the difficulty level for the lesson.
         date:
           type: string
           example: "15/01/2025 10:00"
-          description: Date and time of the lesson (format dd/MM/yyyy HH:mm).
+          description: Scheduled date and time of the lesson (dd/mm/yyyy HH:MM).
 responses:
   201:
-    description: Lesson successfully scheduled.
-    schema:
-      type: object
-      properties:
-        message:
-          type: string
-          example: "Lesson created"
+    description: Lesson successfully created.
   400:
-    description: Validation errors like missing fields or invalid date.
+    description: Validation errors.
   401:
     description: Unauthorized access.
   404:
-    description: Teacher not found.
-  500:
-    description: Internal server error.
+    description: Teacher, subject, or difficulty level not found.
 security:
   - jwt: []

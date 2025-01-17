@@ -37,12 +37,14 @@ def page_not_found(e):
 
 
 @api.route('/subjects', methods=['GET'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_subjects.yml'))
 def get_subjects():
     subjects = Subject.query.all()
     return jsonify({'subjects': [s.to_dict() for s in subjects]}), 200
 
 
 @api.route('/difficulty-levels', methods=['GET'])
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'get_difficulty_levels.yml'))
 def get_difficulty_levels():
     difficulty_levels = DifficultyLevel.query.all()
     return jsonify({'difficulty_levels': [d.to_dict() for d in difficulty_levels]}), 200
@@ -82,7 +84,7 @@ def get_teacher_list():
 ### End of teacher list ###
 
 @api.route('/teacher-update', methods=['PUT'])
-# @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'update_teacher.yml'))
+@swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'update_teacher.yml'))
 @jwt_required()
 def update_teacher():
     user = get_user_by_jwt()
