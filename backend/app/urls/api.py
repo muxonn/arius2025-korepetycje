@@ -16,7 +16,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pdf_generator.lesson_invoice import LessonInvoice
 from pdf_generator.pdf_generator import PDFInvoiceGenerator
-from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, DifficultyLevel, db
+from models import Teacher, Student, Review, Lesson, Calendar, Invoice, LessonReport, Calendar, Subject, \
+    DifficultyLevel, db
 
 api = Blueprint('api', __name__)
 
@@ -129,8 +130,6 @@ def update_teacher():
     return jsonify({'message': 'Teacher details updated'}), 200
 
 
-
-
 ### Reviews ###
 
 @api.route('/teacher-reviews', methods=['GET'])
@@ -200,7 +199,6 @@ def add_review(teacher_id):
 
     if rating < 0 or rating > 5:
         return jsonify({'message': 'Rating must be between values 0 and 5'}), 400
-
 
     new_review = Review(teacher_id=teacher_id, student_id=user.id, rating=rating, comment=comment)
 
@@ -310,16 +308,17 @@ def add_lesson():
     if date < datetime.utcnow():
         return jsonify({'message': 'Lesson time must be in the future'}), 400
 
-    if date.isoweekday() not in set(map(int, calendar.working_days[1:-1].split(','))):
+    if date.isoweekday() not in set(map(int, calendar.working_days.replace("{", "").replace("}", "").split(','))):
         return jsonify({'message': 'Teacher does not work on this weekday'}), 400
 
     if not (calendar.available_from <= date.time() and (date + timedelta(hours=1)).time() <= calendar.available_until):
         return jsonify({'message': 'Teacher does not work in this hours'}), 400
 
-    if subject_id not in set(map(int, teacher.subject_ids[1:-1].split(','))):
+    if subject_id not in set(map(int, teacher.subject_ids.replace("{", "").replace("}", "").split(','))):
         return jsonify({'message': 'Teacher does not teach this subject'}), 400
 
-    if difficulty_level_id not in set(map(int, teacher.difficulty_level_ids[1:-1].split(','))):
+    if difficulty_level_id not in set(
+            map(int, teacher.difficulty_level_ids.replace("{", "").replace("}", "").split(','))):
         return jsonify({'message': 'Teacher does not teach on this difficulty level'}), 400
 
     if Lesson.query.filter_by(teacher_id=teacher_id, date=date).first():
@@ -371,7 +370,7 @@ def add_lesson():
     }
 
     requests.post(email_service_url, json=email_payload)
-        
+
     return jsonify({'message': 'Lesson created'}), 201
 
 
@@ -443,7 +442,8 @@ def get_lesson_by_id(teacher_id):
 ### Invoices ###
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "../static_invoices")
-BASE_DIR = os.path.abspath(BASE_DIR) 
+BASE_DIR = os.path.abspath(BASE_DIR)
+
 
 @api.route('/generated-invoice-pdf/<filename>', methods=['GET'])
 def get_pdf(filename):
@@ -452,7 +452,9 @@ def get_pdf(filename):
     except FileNotFoundError:
         return jsonify({"error": "File not found"}), 400
 
+
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static_invoices"))
+
 
 def generate_and_send_invoice(invoice_id):
     try:
@@ -460,7 +462,7 @@ def generate_and_send_invoice(invoice_id):
         invoice = Invoice.query.filter_by(id=invoice_id).first()
         if not invoice:
             return jsonify({"error": "Invoice not found"}), 404
-        
+
         lesson = Lesson.query.filter_by(id=invoice.lesson_id).first()
         if not lesson:
             return jsonify({"error": "Lesson not found"}), 404
@@ -472,7 +474,7 @@ def generate_and_send_invoice(invoice_id):
         teacher = Teacher.query.filter_by(id=lesson.teacher_id).first()
         if not teacher:
             return jsonify({"error": "Teacher not found"}), 404
-        
+
         subject = Subject.query.filter_by(id=lesson.subject_id).first()
         if not subject:
             return jsonify({"error": "Subject not found"}), 404
@@ -499,7 +501,6 @@ def generate_and_send_invoice(invoice_id):
         pdf_filename = f"invoice_{invoice_id}.pdf"
         pdf_url = f"http://host.docker.internal:5000/api/generated-invoice-pdf/{pdf_filename}"
 
-        
         email_service_url = "http://host.docker.internal:5001/send-email"
         email_payload = {
             "email_receiver": student.email,
@@ -514,7 +515,7 @@ def generate_and_send_invoice(invoice_id):
         }
 
         response = requests.post(email_service_url, json=email_payload)
-        
+
         # Obsługa odpowiedzi z mikroserwisu
         if response.status_code == 200:
             return jsonify({
@@ -528,6 +529,7 @@ def generate_and_send_invoice(invoice_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @api.route('/invoice', methods=['POST'])
 @swag_from(os.path.join(SWAGGER_TEMPLATE_DIR, 'add_invoice.yml'))
@@ -554,7 +556,7 @@ def add_invoice():
     if invoice:
         return jsonify({'message': 'Lesson already invoiced'}), 400
 
-    new_invoice = Invoice(lesson_id=lesson_id, price = lesson.price)
+    new_invoice = Invoice(lesson_id=lesson_id, price=lesson.price)
 
     db.session.add(new_invoice)
     db.session.commit()
@@ -699,12 +701,12 @@ def get_report_by_lesson_id(lesson_id):
 
     report_dict = {
         "student_name": Student.query.filter_by(id=report.student_id).first().name,
-         "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
-         "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
-         "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
-         "homework": report.homework,
-         "progress_rating": report.progress_rating,
-         "comment": report.comment,
+        "teacher_name": Teacher.query.filter_by(id=report.teacher_id).first().name,
+        "subject": Lesson.query.filter_by(id=report.lesson_id).first().subject_id,
+        "date": Lesson.query.filter_by(id=report.lesson_id).first().date.strftime("%d/%m/%Y %H:%M"),
+        "homework": report.homework,
+        "progress_rating": report.progress_rating,
+        "comment": report.comment,
     }
 
     return jsonify({'report': report_dict}), 200
@@ -781,6 +783,7 @@ def get_calendar(teacher_id):
         return jsonify({'message': 'Calendar not found'}), 404
 
     return jsonify(calendar.to_dict()), 200
+
 
 ### End of calendars ###
 
